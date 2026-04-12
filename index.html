@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unmatched VN — Bảng tính Elo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --red: #E8402A;
+    --red-dim: #7a1f10;
+    --blue: #2A6AE8;
+    --blue-dim: #102e7a;
+    --gold: #C8A44A;
+    --bg: #0e0e0e;
+    --surface: #161616;
+    --surface2: #1e1e1e;
+    --border: rgba(255,255,255,0.08);
+    --text: #f0ede8;
+    --muted: #7a7570;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    min-height: 100vh;
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  /* Header */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 24px 32px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(232,64,42,0.08) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 50%, rgba(42,106,232,0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .logo-badge {
+    background: var(--red);
+    color: #fff;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    padding: 6px 12px;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 100%, 8px 100%);
+  }
+  .site-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 3px;
+    color: var(--text);
+  }
+  .site-subtitle {
+    font-size: 12px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-left: auto;
+  }
+
+  /* Main layout */
+  main {
+    max-width: 860px;
+    margin: 48px auto;
+    padding: 0 24px;
+  }
+
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+    font-weight: 400;
+  }
+
+  /* Player cards */
+  .players-grid {
+    display: grid;
+    grid-template-columns: 1fr 56px 1fr;
+    gap: 0;
+    margin-bottom: 32px;
+    align-items: center;
+  }
+  .player-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .player-card.red { border-top: 3px solid var(--red); }
+  .player-card.blue { border-top: 3px solid var(--blue); }
+  .player-card.red::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 120px; height: 120px;
+    background: radial-gradient(circle, rgba(232,64,42,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .player-card.blue::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 120px; height: 120px;
+    background: radial-gradient(circle, rgba(42,106,232,0.07) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .vs-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    color: var(--muted);
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    height: 100%;
+    align-self: stretch;
+  }
+  .player-badge {
+    display: inline-block;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 12px;
+    letter-spacing: 2px;
+    padding: 3px 10px;
+    margin-bottom: 16px;
+  }
+  .player-badge.red { background: rgba(232,64,42,0.15); color: var(--red); }
+  .player-badge.blue { background: rgba(42,106,232,0.15); color: #6b9ef8; }
+
+  label {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-weight: 400;
+  }
+  input[type="number"], input[type="text"] {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 20px;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 16px;
+    -moz-appearance: textfield;
+  }
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  input[type="number"]:focus { border-color: rgba(255,255,255,0.3); }
+  .player-card.red input:focus { border-color: var(--red); }
+  .player-card.blue input:focus { border-color: var(--blue); }
+
+  /* Settings row */
+  .settings-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 20px;
+  }
+  .settings-row .field input {
+    font-size: 16px;
+    margin-bottom: 0;
+  }
+
+  /* Action buttons */
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0;
+    margin-bottom: 40px;
+  }
+  .btn-result {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 3px;
+    padding: 18px 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn-result::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .btn-result:hover { color: var(--text); }
+  .btn-result.win-a { border-top: 3px solid var(--red); }
+  .btn-result.win-a:hover, .btn-result.win-a:focus { background: rgba(232,64,42,0.12); color: var(--red); }
+  .btn-result.draw:hover, .btn-result.draw:focus { background: var(--surface2); color: var(--text); }
+  .btn-result.win-b { border-top: 3px solid var(--blue); }
+  .btn-result.win-b:hover, .btn-result.win-b:focus { background: rgba(42,106,232,0.12); color: #6b9ef8; }
+  .btn-sub { font-size: 10px; letter-spacing: 1px; display: block; font-family: 'DM Sans', sans-serif; font-weight: 300; color: inherit; opacity: 0.6; margin-top: 2px; }
+
+  /* Result panel */
+  #result-panel {
+    display: none;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.3s, transform 0.3s;
+  }
+  #result-panel.show {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .result-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .result-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: var(--muted);
+  }
+  .result-outcome {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+  }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 20px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .result-card.red { border-left: 3px solid var(--red); }
+  .result-card.blue { border-left: 3px solid var(--blue); }
+  .result-player-name {
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .result-elo-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .elo-before {
+    font-family: 'DM Mono', monospace;
+    font-size: 16px;
+    color: var(--muted);
+    text-decoration: line-through;
+    text-decoration-color: rgba(255,255,255,0.2);
+  }
+  .elo-arrow { color: var(--muted); font-size: 14px; }
+  .elo-after {
+    font-family: 'DM Mono', monospace;
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .elo-delta {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 2px 8px;
+  }
+  .elo-delta.pos { background: rgba(80,200,120,0.12); color: #50c878; }
+  .elo-delta.neg { background: rgba(232,64,42,0.12); color: var(--red); }
+  .elo-delta.neu { background: rgba(255,255,255,0.06); color: var(--muted); }
+
+  .prob-bar-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 20px 24px;
+    margin-bottom: 12px;
+  }
+  .prob-label-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 12px;
+  }
+  .prob-a { color: var(--red); font-family: 'DM Mono', monospace; }
+  .prob-b { color: #6b9ef8; font-family: 'DM Mono', monospace; }
+  .prob-bar-track {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 0;
+    overflow: hidden;
+    display: flex;
+  }
+  .prob-bar-a {
+    height: 100%;
+    background: var(--red);
+    transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
+  .prob-bar-b {
+    height: 100%;
+    background: var(--blue);
+    flex: 1;
+    transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  .formula-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 14px 18px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  /* History */
+  .history-section { margin-top: 48px; }
+  .history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .clear-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 11px;
+    padding: 4px 12px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  .clear-btn:hover { border-color: var(--red); color: var(--red); }
+
+  #history-list { display: flex; flex-direction: column; gap: 6px; }
+  .history-item {
+    display: grid;
+    grid-template-columns: 1fr 80px 1fr 80px;
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 10px 16px;
+    font-size: 13px;
+    animation: slideIn 0.25s ease;
+  }
+  @keyframes slideIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+  .h-player { font-weight: 400; }
+  .h-delta { font-family: 'DM Mono', monospace; font-size: 12px; text-align: center; }
+  .h-outcome { font-family: 'Bebas Neue', sans-serif; font-size: 12px; letter-spacing: 1px; text-align: center; padding: 2px 8px; }
+  .h-outcome.win-a { color: var(--red); background: rgba(232,64,42,0.1); }
+  .h-outcome.win-b { color: #6b9ef8; background: rgba(42,106,232,0.1); }
+  .h-outcome.draw { color: var(--muted); background: rgba(255,255,255,0.05); }
+  .empty-state { font-size: 13px; color: var(--muted); text-align: center; padding: 24px; }
+
+  footer {
+    text-align: center;
+    padding: 40px 24px;
+    font-size: 12px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    margin-top: 64px;
+    letter-spacing: 1px;
+  }
+
+  @media (max-width: 640px) {
+    .players-grid { grid-template-columns: 1fr; }
+    .vs-divider { height: 40px; border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+    .settings-row { grid-template-columns: 1fr 1fr; }
+    .result-grid { grid-template-columns: 1fr; }
+    .history-item { grid-template-columns: 1fr 60px 1fr 60px; font-size: 12px; }
+    header { flex-wrap: wrap; }
+    .site-subtitle { width: 100%; margin-left: 0; margin-top: 4px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-badge">UNMATCHED</div>
+  <div class="site-title">ELO CALCULATOR</div>
+  <div class="site-subtitle">Giải 1v1 · Hệ thống xếp hạng</div>
+</header>
+
+<main>
+
+  <!-- Players -->
+  <div class="section-label">Người chơi</div>
+  <div class="players-grid">
+    <div class="player-card red">
+      <div class="player-badge red">Player A</div>
+      <label>Tên</label>
+      <input type="text" id="name_a" placeholder="Nguyễn Văn A" value="">
+      <label>Điểm Elo hiện tại</label>
+      <input type="number" id="ra" value="1500">
+      <label>Số trận đã chơi</label>
+      <input type="number" id="ga" value="10">
+    </div>
+
+    <div class="vs-divider">VS</div>
+
+    <div class="player-card blue">
+      <div class="player-badge blue">Player B</div>
+      <label>Tên</label>
+      <input type="text" id="name_b" placeholder="Trần Thị B" value="">
+      <label>Điểm Elo hiện tại</label>
+      <input type="number" id="rb" value="1500">
+      <label>Số trận đã chơi</label>
+      <input type="number" id="gb" value="10">
+    </div>
+  </div>
+
+  <!-- Settings -->
+  <div class="section-label">Cài đặt hệ thống</div>
+  <div class="settings-row">
+    <div class="field">
+      <label>K-factor (mới &lt;30 ván)</label>
+      <input type="number" id="k_new" value="40">
+    </div>
+    <div class="field">
+      <label>K-factor (thường xuyên)</label>
+      <input type="number" id="k_reg" value="20">
+    </div>
+    <div class="field">
+      <label>Hero bias A (điểm cộng)</label>
+      <input type="number" id="bias" value="0">
+    </div>
+    <div class="field">
+      <label>Elo khởi đầu</label>
+      <input type="number" id="starting" value="1500">
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="section-label">Kết quả trận đấu</div>
+  <div class="actions">
+    <button class="btn-result win-a" onclick="calculate(1)">
+      A THẮNG
+      <span class="btn-sub">Player A chiến thắng</span>
+    </button>
+    <button class="btn-result draw" onclick="calculate(0.5)">
+      HÒA
+      <span class="btn-sub">Chia điểm</span>
+    </button>
+    <button class="btn-result win-b" onclick="calculate(0)">
+      B THẮNG
+      <span class="btn-sub">Player B chiến thắng</span>
+    </button>
+  </div>
+
+  <!-- Result Panel -->
+  <div id="result-panel">
+    <div class="result-header">
+      <div class="result-title">Kết quả</div>
+      <div class="result-outcome" id="outcome-label">—</div>
+    </div>
+
+    <div class="prob-bar-wrap">
+      <div class="prob-label-row">
+        <span>
+          <span class="prob-a" id="prob_a_name">A</span>
+          <span style="color:var(--muted);font-size:11px;margin-left:4px">xác suất thắng kỳ vọng</span>
+        </span>
+        <span>
+          <span style="color:var(--muted);font-size:11px;margin-right:4px">xác suất thắng kỳ vọng</span>
+          <span class="prob-b" id="prob_b_name">B</span>
+        </span>
+      </div>
+      <div class="prob-bar-track">
+        <div class="prob-bar-a" id="bar_a" style="width:50%"></div>
+        <div class="prob-bar-b" id="bar_b"></div>
+      </div>
+      <div class="prob-label-row" style="margin-top:8px;margin-bottom:0">
+        <span class="prob-a" id="pct_a">50%</span>
+        <span class="prob-b" id="pct_b">50%</span>
+      </div>
+    </div>
+
+    <div class="result-grid">
+      <div class="result-card red">
+        <div class="result-player-name" id="res_name_a">Player A</div>
+        <div class="result-elo-row">
+          <span class="elo-before" id="elo_a_before">1500</span>
+          <span class="elo-arrow">→</span>
+          <span class="elo-after" id="elo_a_after">1500</span>
+          <span class="elo-delta" id="delta_a">+0</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px" id="k_a_label">K-factor: 20</div>
+      </div>
+      <div class="result-card blue">
+        <div class="result-player-name" id="res_name_b">Player B</div>
+        <div class="result-elo-row">
+          <span class="elo-before" id="elo_b_before">1500</span>
+          <span class="elo-arrow">→</span>
+          <span class="elo-after" id="elo_b_after">1500</span>
+          <span class="elo-delta" id="delta_b">+0</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:4px" id="k_b_label">K-factor: 20</div>
+      </div>
+    </div>
+
+    <div class="formula-box" id="formula_box"></div>
+  </div>
+
+  <!-- History -->
+  <div class="history-section">
+    <div class="history-header">
+      <div class="section-label" style="margin-bottom:0">Lịch sử trận đấu</div>
+      <button class="clear-btn" onclick="clearHistory()">Xóa lịch sử</button>
+    </div>
+    <div id="history-list">
+      <div class="empty-state">Chưa có trận nào được tính</div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  UNMATCHED VN &nbsp;·&nbsp; Hệ thống tính Elo 1v1 &nbsp;·&nbsp; Elo khởi đầu: <span id="footer-start">1500</span>
+</footer>
+
+<script>
+  let history = [];
+
+  function getK(games) {
+    const kn = parseInt(document.getElementById('k_new').value) || 40;
+    const kr = parseInt(document.getElementById('k_reg').value) || 20;
+    return games < 30 ? kn : kr;
+  }
+
+  function getName(id, fallback) {
+    const v = document.getElementById(id).value.trim();
+    return v || fallback;
+  }
+
+  function calculate(score) {
+    const Ra = parseFloat(document.getElementById('ra').value) || 1500;
+    const Rb = parseFloat(document.getElementById('rb').value) || 1500;
+    const Ga = parseInt(document.getElementById('ga').value) || 0;
+    const Gb = parseInt(document.getElementById('gb').value) || 0;
+    const bias = parseFloat(document.getElementById('bias').value) || 0;
+    const Ka = getK(Ga);
+    const Kb = getK(Gb);
+    const nameA = getName('name_a', 'Player A');
+    const nameB = getName('name_b', 'Player B');
+
+    const RaAdj = Ra + bias;
+    const Ea = 1 / (1 + Math.pow(10, (Rb - RaAdj) / 400));
+    const Eb = 1 - Ea;
+
+    const Sa = score;
+    const Sb = 1 - score;
+    const dRa = Math.round(Ka * (Sa - Ea));
+    const dRb = Math.round(Kb * (Sb - Eb));
+
+    const Ra_new = Math.max(100, Ra + dRa);
+    const Rb_new = Math.max(100, Rb + dRb);
+
+    // Outcome label
+    const outcomeText = score === 1 ? nameA + ' thắng' : score === 0 ? nameB + ' thắng' : 'Hòa';
+    const outcomeColor = score === 1 ? 'var(--red)' : score === 0 ? '#6b9ef8' : 'var(--muted)';
+    document.getElementById('outcome-label').textContent = outcomeText;
+    document.getElementById('outcome-label').style.color = outcomeColor;
+
+    // Prob bar
+    const pctA = (Ea * 100).toFixed(1);
+    const pctB = (Eb * 100).toFixed(1);
+    document.getElementById('bar_a').style.width = pctA + '%';
+    document.getElementById('pct_a').textContent = pctA + '%';
+    document.getElementById('pct_b').textContent = pctB + '%';
+    document.getElementById('prob_a_name').textContent = nameA;
+    document.getElementById('prob_b_name').textContent = nameB;
+
+    // Result cards
+    document.getElementById('res_name_a').textContent = nameA;
+    document.getElementById('res_name_b').textContent = nameB;
+    document.getElementById('elo_a_before').textContent = Ra;
+    document.getElementById('elo_a_after').textContent = Ra_new;
+    document.getElementById('elo_b_before').textContent = Rb;
+    document.getElementById('elo_b_after').textContent = Rb_new;
+
+    const deltaAEl = document.getElementById('delta_a');
+    deltaAEl.textContent = (dRa >= 0 ? '+' : '') + dRa;
+    deltaAEl.className = 'elo-delta ' + (dRa > 0 ? 'pos' : dRa < 0 ? 'neg' : 'neu');
+
+    const deltaBEl = document.getElementById('delta_b');
+    deltaBEl.textContent = (dRb >= 0 ? '+' : '') + dRb;
+    deltaBEl.className = 'elo-delta ' + (dRb > 0 ? 'pos' : dRb < 0 ? 'neg' : 'neu');
+
+    document.getElementById('k_a_label').textContent = 'K-factor: ' + Ka + (Ga < 30 ? ' (người mới)' : '');
+    document.getElementById('k_b_label').textContent = 'K-factor: ' + Kb + (Gb < 30 ? ' (người mới)' : '');
+
+    // Formula
+    document.getElementById('formula_box').innerHTML =
+      `E_${nameA} = 1 / (1 + 10^((${Rb} − ${RaAdj}) / 400)) = ${Ea.toFixed(4)}\n` +
+      `ΔElo_${nameA} = ${Ka} × (${Sa} − ${Ea.toFixed(4)}) = ${dRa}\n` +
+      `ΔElo_${nameB} = ${Kb} × (${Sb} − ${Eb.toFixed(4)}) = ${dRb}`;
+
+    // Show result
+    const panel = document.getElementById('result-panel');
+    panel.style.display = 'block';
+    requestAnimationFrame(() => panel.classList.add('show'));
+
+    // Add to history
+    history.unshift({ nameA, nameB, Ra, Rb, Ra_new, Rb_new, dRa, dRb, score });
+    renderHistory();
+
+    // Update footer
+    document.getElementById('footer-start').textContent = document.getElementById('starting').value || '1500';
+  }
+
+  function renderHistory() {
+    const list = document.getElementById('history-list');
+    if (history.length === 0) {
+      list.innerHTML = '<div class="empty-state">Chưa có trận nào được tính</div>';
+      return;
+    }
+    list.innerHTML = history.map(h => {
+      const oc = h.score === 1 ? 'win-a' : h.score === 0 ? 'win-b' : 'draw';
+      const ocText = h.score === 1 ? 'A Thắng' : h.score === 0 ? 'B Thắng' : 'Hòa';
+      const dA = (h.dRa >= 0 ? '+' : '') + h.dRa;
+      const dB = (h.dRb >= 0 ? '+' : '') + h.dRb;
+      return `<div class="history-item">
+        <span class="h-player">${h.nameA} <span style="color:var(--muted);font-size:12px">${h.Ra}→${h.Ra_new}</span></span>
+        <span class="h-delta" style="color:${h.dRa >= 0 ? '#50c878' : 'var(--red)'}">${dA}</span>
+        <span class="h-player">${h.nameB} <span style="color:var(--muted);font-size:12px">${h.Rb}→${h.Rb_new}</span></span>
+        <span class="h-outcome ${oc}">${ocText}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function clearHistory() {
+    history = [];
+    renderHistory();
+  }
+</script>
+</body>
+</html>
