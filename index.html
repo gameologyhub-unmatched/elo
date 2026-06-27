@@ -223,15 +223,16 @@ const TIER_COLOR={S:'#f8b84a',A:'#50c878',B:'#6b9ef8',C:'#c89af0',D:'#9a9590'};
   <div class="sec-title">Tính Elo trận đấu</div>
   <div class="sec-sub">Admin nhập → Lưu → tự động cập nhật Google Sheets</div>
 
-  <div id="calc-lock" class="admin-gate" style="display:none">
-    <div style="font-size:13px;color:var(--mu2);margin-bottom:10px">🔒 Chức năng này chỉ dành cho Admin. Nhập mật khẩu để tiếp tục.</div>
+  <!-- Admin gate chỉ cho phần nhập kết quả -->
+  <div id="calc-lock" class="admin-gate">
+    <div style="font-size:13px;color:var(--mu2);margin-bottom:10px">🔒 Nhập mật khẩu admin để tính và lưu kết quả trận đấu.</div>
     <div style="display:grid;grid-template-columns:1fr auto;gap:8px">
       <input type="password" id="pw-input" placeholder="Mật khẩu admin" onkeydown="if(event.key==='Enter')verifyPw()">
       <button class="btn btn-primary" onclick="verifyPw()">Xác nhận</button>
     </div>
   </div>
 
-  <div id="calc-body">
+  <div id="calc-body" style="display:none">
     <div class="sec-label">Người chơi & Hero</div>
     <div class="pg">
       <div class="pc ra">
@@ -296,40 +297,49 @@ const TIER_COLOR={S:'#f8b84a',A:'#50c878',B:'#6b9ef8',C:'#c89af0',D:'#9a9590'};
       </div>
     </div>
 
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-      <div class="sec-label" style="margin-bottom:0">Lịch sử trận</div>
-      <button class="btn btn-danger btn-sm" onclick="doClearHistory()">Xóa lịch sử</button>
+  </div><!-- end calc-body -->
+
+  <!-- Lịch sử trận - mọi người đều xem được -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;margin-top:28px">
+    <div class="sec-label" style="margin-bottom:0">Lịch sử trận đấu</div>
+    <div id="hist-admin-btn" style="display:none">
+      <button class="btn btn-danger btn-sm" onclick="doClearHistory()">Xóa tất cả</button>
     </div>
-    <div id="hist-list"><div class="empty">Chưa có trận nào</div></div>
   </div>
+  <div id="hist-list"><div class="loading-overlay"><div class="spinner"></div> Đang tải...</div></div>
 </div>
 
 <!-- ══ MEMBERS ══ -->
 <div class="page" id="page-mem">
   <div class="sec-title">Quản lý thành viên</div>
   <div class="sec-sub">Dữ liệu lưu trên Google Sheets — đồng bộ mọi thiết bị</div>
-  <div id="mem-lock" class="admin-gate" style="display:none">
-    <div style="font-size:13px;color:var(--mu2);margin-bottom:10px">🔒 Cần mật khẩu admin để thêm/xóa thành viên.</div>
-    <div style="display:grid;grid-template-columns:1fr auto;gap:8px">
-      <input type="password" id="pw-mem" placeholder="Mật khẩu admin" onkeydown="if(event.key==='Enter')verifyPwMem()">
-      <button class="btn btn-primary" onclick="verifyPwMem()">Xác nhận</button>
+  <!-- Danh sách luôn hiển thị -->
+  <div class="sec-label">Danh sách (<span id="mc">0</span> thành viên)</div>
+  <div class="mg" id="mg"></div>
+
+  <!-- Chỉ admin mới thấy phần thêm -->
+  <div id="mem-admin-section" style="margin-top:24px">
+    <div id="mem-lock" class="admin-gate">
+      <div style="font-size:13px;color:var(--mu2);margin-bottom:10px">🔒 Nhập mật khẩu admin để thêm/xóa thành viên.</div>
+      <div style="display:grid;grid-template-columns:1fr auto;gap:8px">
+        <input type="password" id="pw-mem" placeholder="Mật khẩu admin" onkeydown="if(event.key==='Enter')verifyPwMem()">
+        <button class="btn btn-primary" onclick="verifyPwMem()">Xác nhận</button>
+      </div>
     </div>
-  </div>
-  <div id="mem-body">
-    <div class="sec-label">Thêm thành viên</div>
-    <div class="af">
-      <div><label>Tên thành viên</label><input type="text" id="new_name" placeholder="Nguyễn Văn A" onkeydown="if(event.key==='Enter')addMember()"></div>
-      <button class="btn btn-primary" onclick="addMember()" style="height:40px">+ Thêm</button>
+    <div id="mem-body" style="display:none">
+      <div class="sec-label">Thêm thành viên mới</div>
+      <div class="af">
+        <div><label>Tên thành viên</label><input type="text" id="new_name" placeholder="Nguyễn Văn A" onkeydown="if(event.key==='Enter')addMember()"></div>
+        <button class="btn btn-primary" onclick="addMember()" style="height:40px">+ Thêm</button>
+      </div>
     </div>
-    <div class="sec-label">Danh sách (<span id="mc">0</span> thành viên)</div>
-    <div class="mg" id="mg"></div>
   </div>
 </div>
 
 <!-- ══ HEROES ══ -->
 <div class="page" id="page-heroes">
-  <div class="sec-title">Quản lý Hero</div>
-  <div class="sec-sub">Hero lưu cục bộ trong trình duyệt admin</div>
+  <div class="sec-title">Danh sách Hero</div>
+  <div class="sec-sub">Xem tier list và hệ số bias của từng hero</div>
   <div class="card" style="margin-bottom:18px;border-left:3px solid var(--purple)">
     <div style="font-size:13px;color:var(--mu2);line-height:1.8">
       <strong style="color:var(--purple);font-weight:400">Bias hoạt động thế nào:</strong>
@@ -337,14 +347,8 @@ const TIER_COLOR={S:'#f8b84a',A:'#50c878',B:'#6b9ef8',C:'#c89af0',D:'#9a9590'};
       <span style="color:var(--mu)">S=+60 · A=+30 · B=±0 · C=−30 · D=−60</span>
     </div>
   </div>
-  <div class="sec-label">Thêm hero mới</div>
-  <div class="hero-add-form">
-    <div><label>Tên hero</label><input type="text" id="new_hero_name" placeholder="Tên hero" onkeydown="if(event.key==='Enter')addHero()"></div>
-    <div><label>Tier</label><select id="new_hero_tier" onchange="autoFillBias()"><option value="S">S (+60)</option><option value="A">A (+30)</option><option value="B" selected>B (±0)</option><option value="C">C (-30)</option><option value="D">D (-60)</option></select></div>
-    <div><label>Bias (override)</label><input type="number" id="new_hero_bias" placeholder="auto" value=""></div>
-    <button class="btn btn-primary" onclick="addHero()" style="height:40px">+ Thêm</button>
-  </div>
-  <div class="sec-label">Danh sách (<span id="hero-count">0</span> hero)</div>
+
+  <div class="sec-label">Danh sách hero (<span id="hero-count">0</span>)</div>
   <div class="hero-grid" id="hero-grid"></div>
   <div class="sec-label">Thống kê win rate</div>
   <table class="hs-table"><thead><tr>
@@ -386,14 +390,7 @@ const TIER_COLOR={S:'#f8b84a',A:'#50c878',B:'#6b9ef8',C:'#c89af0',D:'#9a9590'};
   </div>
   <button class="btn btn-primary" onclick="saveSettingsRemote()" style="margin-bottom:28px">💾 Lưu cài đặt lên Sheets</button>
 
-  <div class="sec-label">Dữ liệu cục bộ (hero list)</div>
-  <div class="card" style="margin-bottom:12px">
-    <div style="font-size:13px;color:var(--mu2);margin-bottom:12px">Xuất/nhập danh sách hero (lưu trong trình duyệt).</div>
-    <div class="row">
-      <button class="btn" onclick="exportHeroes()">📥 Xuất hero JSON</button>
-      <label class="btn" style="cursor:pointer">📤 Nhập hero JSON<input type="file" accept=".json" style="display:none" onchange="importHeroes(event)"></label>
-    </div>
-  </div>
+
 </div>
 
 <script>
@@ -570,10 +567,14 @@ async function apiPost(action, data) {
 
 // ── ADMIN AUTH ────────────────────────────────────────
 function checkAdmin(bodyId, lockId) {
-  if (!apiUrl) { showToast('Cấu hình URL trước trong Cài đặt!','err'); return; }
   if (isAdmin) {
     document.getElementById(lockId).style.display='none';
     document.getElementById(bodyId).style.display='block';
+    // Show admin-only buttons
+    const histBtn = document.getElementById('hist-admin-btn');
+    if (histBtn) histBtn.style.display='flex';
+    const delBtns = document.querySelectorAll('.del-member-btn');
+    delBtns.forEach(b=>b.style.display='inline-block');
   } else {
     document.getElementById(lockId).style.display='block';
     document.getElementById(bodyId).style.display='none';
@@ -581,15 +582,17 @@ function checkAdmin(bodyId, lockId) {
 }
 async function verifyPw() {
   const pw = document.getElementById('pw-input').value;
-  const r  = await apiPost('saveSettings', cfg); // test call
-  // If no error, password is correct
+  apiPw = pw;
+  const r  = await apiPost('saveSettings', cfg);
   if (r && r.ok) {
-    apiPw = pw; saveLocal();
-    isAdmin = true;
+    saveLocal(); isAdmin = true;
     document.getElementById('calc-lock').style.display='none';
     document.getElementById('calc-body').style.display='block';
+    const histBtn=document.getElementById('hist-admin-btn');
+    if(histBtn)histBtn.style.display='flex';
+    showToast('Đăng nhập thành công!','ok');
   } else {
-    showToast('Sai mật khẩu!','err');
+    apiPw=''; showToast('Sai mật khẩu!','err');
   }
 }
 async function verifyPwMem() {
@@ -600,8 +603,11 @@ async function verifyPwMem() {
     isAdmin = true; saveLocal();
     document.getElementById('mem-lock').style.display='none';
     document.getElementById('mem-body').style.display='block';
+    // Show delete buttons on member cards
+    document.querySelectorAll('.del-member-btn').forEach(b=>b.style.display='inline-block');
+    showToast('Đăng nhập thành công!','ok');
   } else {
-    apiPw = ''; showToast('Sai mật khẩu!','err');
+    apiPw=''; showToast('Sai mật khẩu!','err');
   }
 }
 
@@ -616,13 +622,23 @@ function showPage(id, btn) {
   if (id==='mem')   { renderMem(); checkAdmin('mem-body','mem-lock'); }
   if (id==='heroes'){ renderHeroes(); }
   if (id==='cfg')   { loadCfgUI(); }
+  // Re-apply admin UI state
+  if (isAdmin) {
+    const histBtn = document.getElementById('hist-admin-btn');
+    if (histBtn) histBtn.style.display='flex';
+  }
 }
 
 async function loadAll() {
   const d = await apiFetch();
   if (!d) return;
-  renderLB(); renderMem(); renderHist();
-  fillSelects();
+  renderLB(); renderMem(); renderHist(); fillSelects();
+  // Re-apply admin state after reload
+  if (isAdmin) {
+    const histBtn=document.getElementById('hist-admin-btn');
+    if(histBtn)histBtn.style.display='flex';
+    document.querySelectorAll('.del-member-btn').forEach(b=>b.style.display='inline-block');
+  }
 }
 
 // ── AVATAR ────────────────────────────────────────────
@@ -690,32 +706,17 @@ function renderMem() {
       <div class="mn">${m.name}${isNew?` <span class="chip-new">Mới</span>`:''}</div>
       <div class="me">${m.elo} Elo &middot; <span style="color:var(--green)">${m.wins}W</span> ${m.losses}L</div>
       <div class="mg2">${m.games} trận &middot; Win ${wr}%</div>
-    </div><button class="btn btn-danger btn-sm" onclick="delMember('${m.id}','${m.name}')">Xóa</button></div>`
+    </div><button class="btn btn-danger btn-sm del-member-btn" onclick="delMember('${m.id}','${m.name}')" style="display:${isAdmin?'inline-block':'none'}">Xóa</button></div>`
   }).join('');
 }
 
 // ── HEROES ────────────────────────────────────────────
 function bsCls(b){return b>0?'p':b<0?'n':'z'}
 function bsStr(b){return b>0?'+'+b:b===0?'±0':''+b}
-function autoFillBias(){
-  const t=document.getElementById('new_hero_tier').value;
-  document.getElementById('new_hero_bias').value='';
-  document.getElementById('new_hero_bias').placeholder=bsStr(TIER_BIAS[t]||0)+'(auto)';
-}
-function addHero(){
-  const nameEl=document.getElementById('new_hero_name');
-  const tier=document.getElementById('new_hero_tier').value||'B';
-  const biasEl=document.getElementById('new_hero_bias');
-  const name=nameEl.value.trim();
-  const bias=biasEl.value!==''?parseInt(biasEl.value):(TIER_BIAS[tier]||0);
-  if(!name)return;
-  if(heroes.find(h=>h.name.toLowerCase()===name.toLowerCase())){showToast('Hero đã tồn tại!','err');return}
   heroes.push({id:'h'+Date.now(),name,tier,bias});
   saveLocal(); nameEl.value=''; biasEl.value='';
   renderHeroes(); fillHeroSelects();
 }
-function updateHeroBias(id,val){const h=heroes.find(x=>x.id===id);if(h){h.bias=parseInt(val)||0;saveLocal();}}
-function delHero(id){if(!confirm('Xóa hero này?'))return;heroes=heroes.filter(h=>h.id!==id);saveLocal();renderHeroes();fillHeroSelects();}
 function renderHeroes(){
   const grid=document.getElementById('hero-grid');
   document.getElementById('hero-count').textContent=heroes.length;
@@ -734,7 +735,7 @@ function renderHeroes(){
     html+=group.map(h=>{
       const st=stats[h.id]||{games:0,wins:0};
       const wr=st.games?Math.round(st.wins/st.games*100):null;
-      return`<div class="hc" style="border-left:3px solid ${tc}33"><div style="flex:1;min-width:0"><div class="hn">${h.name}</div><div class="hbv ${bsCls(h.bias)}">Bias: ${bsStr(h.bias)}</div><div class="hwr">${st.games?`${st.games} trận · Win ${wr}%`:'Chưa có dữ liệu'}</div></div><div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0"><input type="number" value="${h.bias}" style="width:62px;font-size:12px;padding:4px 7px;text-align:center;background:var(--sf2);border:1px solid var(--bd);color:var(--tx)" onchange="updateHeroBias('${h.id}',this.value)" title="Sửa bias"><button class="btn btn-danger btn-sm" onclick="delHero('${h.id}')">Xóa</button></div></div>`
+      return`<div class="hc" style="border-left:3px solid ${tc}33"><div style="flex:1;min-width:0"><div class="hn">${h.name}</div><div class="hbv ${bsCls(h.bias)}">Bias: ${bsStr(h.bias)}</div><div class="hwr">${st.games?`${st.games} trận · Win ${wr}%`:'Chưa có dữ liệu'}</div></div></div>`
     }).join('');
   });
   grid.innerHTML=html;
@@ -951,19 +952,6 @@ async function saveSettingsRemote(){
   const r=await apiPost('saveSettings',cfg);
   if(r)showToast('Đã lưu cài đặt!','ok');
 }
-function exportHeroes(){
-  const b=new Blob([JSON.stringify(heroes,null,2)],{type:'application/json'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(b);
-  a.download=`heroes-${new Date().toISOString().slice(0,10)}.json`;a.click();
-}
-function importHeroes(e){
-  const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();
-  r.onload=ev=>{
-    try{const d=JSON.parse(ev.target.result);if(!Array.isArray(d))return alert('File không hợp lệ!');
-      if(!confirm(`Nhập ${d.length} hero? Danh sách hiện tại bị ghi đè.`))return;
-      heroes=d;saveLocal();renderHeroes();fillHeroSelects();showToast('Nhập thành công!','ok');
-    }catch{alert('Lỗi đọc file!');}
   };r.readAsText(f);
 }
 
