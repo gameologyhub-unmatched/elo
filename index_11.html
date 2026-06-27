@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unmatched Gameology Hub — Hệ thống Elo</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500&family=DM+Mono&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#E8402A;--red-bg:rgba(232,64,42,0.1);
+  --blue:#2A6AE8;--blue-bg:rgba(42,106,232,0.1);--blue-lt:#6b9ef8;
+  --gold:#C8A44A;--gold-bg:rgba(200,164,74,0.12);
+  --green:#50c878;--green-bg:rgba(80,200,120,0.1);
+  --purple:#9B6BF8;--purple-bg:rgba(155,107,248,0.1);
+  --bg:#0e0e0e;--sf:#161616;--sf2:#1e1e1e;--sf3:#242424;
+  --bd:rgba(255,255,255,0.08);--bd2:rgba(255,255,255,0.16);
+  --tx:#f0ede8;--mu:#6a6560;--mu2:#9a9590;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;font-weight:300;min-height:100vh;overflow-x:hidden}
+
+/* NAV */
+nav{display:flex;align-items:center;border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:100;background:rgba(14,14,14,0.97);backdrop-filter:blur(8px)}
+.nav-logo{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;padding:14px 16px;border-right:1px solid var(--bd);white-space:nowrap;flex-shrink:0}
+.nav-logo span{color:var(--red)}
+.nav-tabs{display:flex;overflow-x:auto;flex:1}
+.tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--mu);font-family:'DM Sans',sans-serif;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;padding:14px 14px;cursor:pointer;white-space:nowrap;transition:all .15s}
+.tab:hover{color:var(--tx)}.tab.active{color:var(--tx);border-bottom-color:var(--red)}
+.sync-pill{display:flex;align-items:center;gap:6px;padding:6px 14px;border-left:1px solid var(--bd);margin-left:auto;flex-shrink:0}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--mu);transition:background .3s}
+.dot.ok{background:var(--green)}.dot.err{background:var(--red)}.dot.loading{background:var(--gold);animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+#sync-label{font-size:11px;color:var(--mu)}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--sf3);border:1px solid var(--bd2);color:var(--tx);font-size:13px;padding:10px 20px;border-radius:4px;z-index:999;transition:transform .25s;pointer-events:none}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:var(--green);color:var(--green)}
+.toast.err{border-color:var(--red);color:var(--red)}
+
+/* PAGES */
+.page{display:none;max-width:960px;margin:0 auto;padding:28px 18px 80px}
+.page.active{display:block}
+.sec-label{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--mu);margin-bottom:10px;font-weight:400}
+.sec-title{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:2px;margin-bottom:4px}
+.sec-sub{font-size:13px;color:var(--mu2);margin-bottom:24px}
+
+/* INPUTS */
+label{display:block;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mu);margin-bottom:5px;font-weight:400}
+input[type=number],input[type=text],input[type=password],select{width:100%;background:var(--sf2);border:1px solid var(--bd);color:var(--tx);font-family:'DM Sans',sans-serif;font-size:14px;font-weight:300;padding:9px 12px;outline:none;transition:border-color .2s;-moz-appearance:textfield;border-radius:0;appearance:none}
+input::-webkit-inner-spin-button{-webkit-appearance:none}
+input:focus,select:focus{border-color:var(--bd2)}
+select option{background:var(--sf2)}
+.fg{margin-bottom:12px}
+
+/* BUTTONS */
+.btn{background:none;border:1px solid var(--bd2);color:var(--mu2);font-family:'DM Sans',sans-serif;font-size:12px;letter-spacing:1px;text-transform:uppercase;padding:8px 16px;cursor:pointer;transition:all .15s}
+.btn:hover{color:var(--tx);border-color:rgba(255,255,255,.3)}
+.btn-primary{background:var(--red);border-color:var(--red);color:#fff;font-size:13px;padding:10px 22px}
+.btn-primary:hover{background:#c83320;border-color:#c83320;color:#fff}
+.btn-danger{border-color:rgba(232,64,42,.3);color:var(--red)}
+.btn-danger:hover{background:var(--red-bg);border-color:var(--red)}
+.btn-sm{padding:4px 12px;font-size:11px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.card{background:var(--sf);border:1px solid var(--bd);padding:18px 22px}
+.empty{font-size:13px;color:var(--mu);text-align:center;padding:32px;border:1px dashed var(--bd)}
+
+/* LOADING SPINNER */
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--bd2);border-top-color:var(--tx);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay{display:flex;align-items:center;justify-content:center;gap:10px;padding:40px;color:var(--mu);font-size:13px}
+
+/* ── LEADERBOARD ── */
+.lb-header{display:grid;grid-template-columns:40px 1fr 90px 90px 60px 60px;gap:6px;padding:7px 14px;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mu);margin-bottom:4px}
+.lb-row{display:grid;grid-template-columns:40px 1fr 90px 90px 60px 60px;gap:6px;align-items:center;background:var(--sf);border:1px solid var(--bd);padding:11px 14px;margin-bottom:4px;transition:border-color .15s}
+.lb-row:hover{border-color:var(--bd2)}
+.lb-row.r1{border-left:3px solid var(--gold)}.lb-row.r2{border-left:3px solid var(--mu2)}.lb-row.r3{border-left:3px solid #cd7f32}
+.lb-rank{font-family:'Bebas Neue',sans-serif;font-size:15px;color:var(--mu);text-align:center}
+.r1 .lb-rank{color:var(--gold)}.r2 .lb-rank{color:var(--mu2)}.r3 .lb-rank{color:#cd7f32}
+.lb-elo{font-family:'DM Mono',monospace;font-size:16px;font-weight:500;text-align:right}
+.lb-stat{font-family:'DM Mono',monospace;font-size:12px;color:var(--mu2);text-align:center}
+
+/* ── CALCULATOR ── */
+.pg{display:grid;grid-template-columns:1fr 46px 1fr;margin-bottom:18px;align-items:stretch}
+.pc{background:var(--sf);border:1px solid var(--bd);padding:18px}
+.pc.ra{border-top:3px solid var(--red)}.pc.bl{border-top:3px solid var(--blue)}
+.vs-col{display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:17px;color:var(--mu);background:var(--bg);border-top:1px solid var(--bd);border-bottom:1px solid var(--bd)}
+.pb{display:inline-block;font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:2px;padding:3px 9px;margin-bottom:12px}
+.pb.ra{background:var(--red-bg);color:var(--red)}.pb.bl{background:var(--blue-bg);color:var(--blue-lt)}
+.elo-disp{font-family:'DM Mono',monospace;font-size:26px;font-weight:500;padding:5px 0 2px;border-bottom:1px solid var(--bd)}
+.elo-info{font-size:11px;color:var(--mu);margin-top:4px;line-height:1.6}
+.hbadge{font-family:'DM Mono',monospace;font-size:12px;margin-top:6px}
+.hbp{color:var(--red);background:var(--red-bg);padding:1px 8px}
+.hbn{color:var(--blue-lt);background:var(--blue-bg);padding:1px 8px}
+.hbz{color:var(--mu);background:var(--sf2);padding:1px 8px}
+.eff-row{display:flex;align-items:baseline;gap:6px;margin-top:5px;font-size:11px;color:var(--mu)}
+.eff-val{font-family:'DM Mono',monospace;font-size:14px;color:var(--purple)}
+.actions{display:grid;grid-template-columns:1fr 1fr 1fr;margin-bottom:24px}
+.br{background:var(--sf);border:1px solid var(--bd);color:var(--mu);font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:2px;padding:14px 6px;cursor:pointer;transition:all .15s;text-align:center}
+.br .s{font-size:10px;letter-spacing:1px;font-family:'DM Sans',sans-serif;font-weight:300;display:block;margin-top:2px;opacity:.5}
+.br.wa{border-top:3px solid var(--red)}.br.wa:hover{background:var(--red-bg);color:var(--red)}
+.br.dr:hover{background:var(--sf2);color:var(--tx)}
+.br.wb{border-top:3px solid var(--blue)}.br.wb:hover{background:var(--blue-bg);color:var(--blue-lt)}
+#rp{display:none}
+.pw{background:var(--sf);border:1px solid var(--bd);padding:14px 18px;margin-bottom:10px}
+.plr{display:flex;justify-content:space-between;margin-bottom:7px;font-size:12px}
+.pt{height:5px;background:var(--sf2);display:flex;overflow:hidden}
+.ba-b{height:100%;background:var(--red);transition:width .4s cubic-bezier(.4,0,.2,1)}
+.bb-b{height:100%;background:var(--blue);flex:1}
+.rg{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.rc{background:var(--sf);border:1px solid var(--bd);padding:14px 18px}
+.rc.ra{border-left:3px solid var(--red)}.rc.bl{border-left:3px solid var(--blue)}
+.rn{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mu);margin-bottom:5px}
+.rh{font-size:12px;color:var(--purple);margin-bottom:6px;font-style:italic}
+.er{display:flex;align-items:baseline;gap:7px;flex-wrap:wrap}
+.e-b{font-family:'DM Mono',monospace;font-size:13px;color:var(--mu);text-decoration:line-through;text-decoration-color:rgba(255,255,255,.2)}
+.e-a{font-family:'DM Mono',monospace;font-size:22px;font-weight:500}
+.dl{font-family:'DM Mono',monospace;font-size:13px;padding:1px 7px}
+.dl.p{background:var(--green-bg);color:var(--green)}.dl.n{background:var(--red-bg);color:var(--red)}.dl.z{background:var(--sf2);color:var(--mu)}
+.fm{background:var(--bg);border:1px solid var(--bd);padding:12px 14px;font-family:'DM Mono',monospace;font-size:11px;color:var(--mu);line-height:2;white-space:pre-wrap;margin-bottom:18px}
+.bias-note{background:var(--sf);border:1px solid var(--bd);border-left:3px solid var(--purple);padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--mu2);line-height:1.7;display:none}
+
+/* HISTORY */
+.hist-wrap{background:var(--sf);border:1px solid var(--bd);padding:10px 14px;margin-bottom:4px;animation:fi .2s ease}
+@keyframes fi{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+.hist-row{display:grid;grid-template-columns:1fr 54px 1fr 66px 84px;gap:6px;align-items:center;font-size:12px}
+.hd{font-family:'DM Mono',monospace;font-size:11px;text-align:center}
+.ho{font-family:'Bebas Neue',sans-serif;font-size:11px;letter-spacing:1px;text-align:center;padding:2px 6px}
+.ho.wa{background:var(--red-bg);color:var(--red)}.ho.wb{background:var(--blue-bg);color:var(--blue-lt)}.ho.dr{background:var(--sf2);color:var(--mu)}
+.ht{font-size:10px;color:var(--mu);text-align:right;font-family:'DM Mono',monospace}
+.hist-hero{font-size:10px;color:var(--purple);font-style:italic;margin-top:2px}
+
+/* MEMBERS */
+.mg{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin-bottom:24px}
+.mc{background:var(--sf);border:1px solid var(--bd);padding:14px 16px;display:flex;align-items:center;gap:12px;transition:border-color .15s}
+.mc:hover{border-color:var(--bd2)}
+.av{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:15px;flex-shrink:0}
+.mi{flex:1;min-width:0}
+.mn{font-size:14px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.me{font-family:'DM Mono',monospace;font-size:12px;color:var(--mu2)}
+.mg2{font-size:11px;color:var(--mu)}
+.af{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:end;margin-bottom:24px}
+.chip-new{font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;background:var(--gold-bg);color:var(--gold)}
+
+/* HEROES */
+.hero-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:7px;margin-bottom:24px}
+.hc{background:var(--sf);border:1px solid var(--bd);padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;transition:border-color .15s}
+.hc:hover{border-color:var(--bd2)}
+.hn{font-size:13px;font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hbv{font-family:'DM Mono',monospace;font-size:12px;margin-top:2px}
+.hbv.p{color:var(--red)}.hbv.n{color:var(--blue-lt)}.hbv.z{color:var(--mu)}
+.hwr{font-size:10px;color:var(--mu);margin-top:2px}
+.hero-add-form{display:grid;grid-template-columns:1fr 110px 95px auto;gap:8px;align-items:end;margin-bottom:24px}
+.hs-table{width:100%;border-collapse:collapse;margin-bottom:24px}
+.hs-table th{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--mu);font-weight:400;padding:7px 10px;text-align:left;border-bottom:1px solid var(--bd)}
+.hs-table td{font-size:12px;padding:9px 10px;border-bottom:1px solid var(--bd);vertical-align:middle}
+.hs-table tr:hover td{background:var(--sf2)}
+.hs-table .mono{font-family:'DM Mono',monospace}
+.tier-divider{display:flex;align-items:center;gap:10px;margin:10px 0 6px}
+
+/* SETTINGS */
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
+.admin-gate{background:var(--sf);border:1px solid var(--bd);border-left:3px solid var(--red);padding:16px 20px;margin-bottom:16px}
+
+/* TIER COLORS */
+const TIER_COLOR={S:'#f8b84a',A:'#50c878',B:'#6b9ef8',C:'#c89af0',D:'#9a9590'};
+
+@media(max-width:580px){
+  .pg{grid-template-columns:1fr}
+  .vs-col{height:32px;border-left:1px solid var(--bd);border-right:1px solid var(--bd)}
+  .rg{grid-template-columns:1fr}
+  .lb-header,.lb-row{grid-template-columns:36px 1fr 80px 56px}
+  .lb-header .h-wl,.lb-row .lb-stat:nth-child(4),
+  .lb-header .h-wr,.lb-row .lb-stat:last-child{display:none}
+  .hist-row{grid-template-columns:1fr 42px 1fr 56px;font-size:11px}
+  .ht{display:none}
+  .sg{grid-template-columns:1fr}
+  .hero-add-form{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">UNMATCHED <span>GAMEOLOGY HUB</span></div>
+  <div class="nav-tabs">
+    <button class="tab active" onclick="showPage('lb',this)">🏆 Xếp hạng</button>
+    <button class="tab" onclick="showPage('calc',this)">⚔️ Tính Elo</button>
+    <button class="tab" onclick="showPage('mem',this)">👤 Thành viên</button>
+    <button class="tab" onclick="showPage('heroes',this)">🦸 Hero</button>
+    <button class="tab" onclick="showPage('cfg',this)">⚙️ Cài đặt</button>
+  </div>
+  <div class="sync-pill">
+    <div class="dot" id="sync-dot"></div>
+    <span id="sync-label">Chưa kết nối</span>
+  </div>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<!-- ══ LEADERBOARD ══ -->
+<div class="page active" id="page-lb">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+    <div>
+      <div class="sec-title">Bảng xếp hạng</div>
+      <div class="sec-sub" id="lb-sub" style="margin-bottom:0">Đang tải...</div>
+    </div>
+    <button class="btn" onclick="loadAll()">🔄 Làm mới</button>
+  </div>
+  <div class="lb-header">
+    <div>#</div><div>Tên</div>
+    <div style="text-align:right">Elo</div>
+    <div class="h-wl" style="text-align:center">W / L</div>
+    <div style="text-align:center">Trận</div>
+    <div class="h-wr" style="text-align:center">Win%</div>
+  </div>
+  <div id="lb-list"><div class="loading-overlay"><div class="spinner"></div> Đang tải...</div></div>
+</div>
+
+<!-- ══ CALCULATOR ══ -->
+<div class="page" id="page-calc">
+  <div class="sec-title">Tính Elo trận đấu</div>
+  <div class="sec-sub">Admin nhập → Lưu → tự động cập nhật Google Sheets</div>
+
+  <div id="calc-lock" class="admin-gate" style="display:none">
+    <div style="font-size:13px;color:var(--mu2);margin-bottom:10px">🔒 Chức năng này chỉ dành cho Admin. Nhập mật khẩu để tiếp tục.</div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px">
+      <input type="password" id="pw-input" placeholder="Mật khẩu admin" onkeydown="if(event.key==='Enter')verifyPw()">
+      <button class="btn btn-primary" onclick="verifyPw()">Xác nhận</button>
+    </div>
+  </div>
+
+  <div id="calc-body">
+    <div class="sec-label">Người chơi & Hero</div>
+    <div class="pg">
+      <div class="pc ra">
+        <div class="pb ra">Player A</div>
+        <div class="fg"><label>Thành viên</label><select id="sel_a" onchange="onSel('a')"><option value="">— Chọn —</option></select></div>
+        <div class="fg"><label>Hero sử dụng</label><select id="hero_a" onchange="onHeroChange('a')"><option value="">— Không chọn —</option></select></div>
+        <div class="elo-disp" id="ed_a">—</div>
+        <div class="elo-info" id="ei_a">Chưa chọn</div>
+        <div id="hbadge_a" class="hbadge"></div>
+        <div class="eff-row" id="eeff_a" style="display:none">Elo hiệu chỉnh: <span class="eff-val" id="eff_a"></span></div>
+      </div>
+      <div class="vs-col">VS</div>
+      <div class="pc bl">
+        <div class="pb bl">Player B</div>
+        <div class="fg"><label>Thành viên</label><select id="sel_b" onchange="onSel('b')"><option value="">— Chọn —</option></select></div>
+        <div class="fg"><label>Hero sử dụng</label><select id="hero_b" onchange="onHeroChange('b')"><option value="">— Không chọn —</option></select></div>
+        <div class="elo-disp" id="ed_b">—</div>
+        <div class="elo-info" id="ei_b">Chưa chọn</div>
+        <div id="hbadge_b" class="hbadge"></div>
+        <div class="eff-row" id="eeff_b" style="display:none">Elo hiệu chỉnh: <span class="eff-val" id="eff_b"></span></div>
+      </div>
+    </div>
+
+    <div class="bias-note" id="bias-note">
+      <strong style="color:var(--purple);font-weight:400">Hero bias:</strong>
+      Elo thực không đổi — chỉ xác suất kỳ vọng (E) được hiệu chỉnh. Hero mạnh → E cao → thắng ít điểm hơn, thua mất nhiều điểm hơn.
+    </div>
+
+    <div class="sec-label">Kết quả trận đấu</div>
+    <div class="actions">
+      <button class="br wa" onclick="calcMatch(1)">A THẮNG<span class="s">Player A chiến thắng</span></button>
+      <button class="br dr" onclick="calcMatch(0.5)">HÒA<span class="s">Chia điểm</span></button>
+      <button class="br wb" onclick="calcMatch(0)">B THẮNG<span class="s">Player B chiến thắng</span></button>
+    </div>
+
+    <div id="rp">
+      <div class="sec-label">Kết quả — <span id="oc-label" style="color:var(--gold)"></span></div>
+      <div class="pw">
+        <div class="plr">
+          <span style="color:var(--red);font-family:'DM Mono',monospace" id="pla">A</span>
+          <span style="font-size:11px;color:var(--mu)">xác suất thắng kỳ vọng</span>
+          <span style="color:var(--blue-lt);font-family:'DM Mono',monospace" id="plb">B</span>
+        </div>
+        <div class="pt"><div class="ba-b" id="bar_a" style="width:50%"></div><div class="bb-b"></div></div>
+      </div>
+      <div class="rg">
+        <div class="rc ra">
+          <div class="rn" id="rna">A</div><div class="rh" id="rha"></div>
+          <div class="er"><span class="e-b" id="rba"></span><span style="color:var(--mu);font-size:12px">→</span><span class="e-a" id="raa"></span><span class="dl" id="rda"></span></div>
+          <div style="font-size:11px;color:var(--mu);margin-top:5px" id="rka"></div>
+        </div>
+        <div class="rc bl">
+          <div class="rn" id="rnb">B</div><div class="rh" id="rhb"></div>
+          <div class="er"><span class="e-b" id="rbb"></span><span style="color:var(--mu);font-size:12px">→</span><span class="e-a" id="rab"></span><span class="dl" id="rdb"></span></div>
+          <div style="font-size:11px;color:var(--mu);margin-top:5px" id="rkb"></div>
+        </div>
+      </div>
+      <div class="fm" id="fm"></div>
+      <div class="row" style="margin-bottom:28px">
+        <button class="btn btn-primary" onclick="doSave()" id="btn-save">💾 Lưu kết quả</button>
+        <button class="btn" onclick="resetCalc()">Làm lại</button>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div class="sec-label" style="margin-bottom:0">Lịch sử trận</div>
+      <button class="btn btn-danger btn-sm" onclick="doClearHistory()">Xóa lịch sử</button>
+    </div>
+    <div id="hist-list"><div class="empty">Chưa có trận nào</div></div>
+  </div>
+</div>
+
+<!-- ══ MEMBERS ══ -->
+<div class="page" id="page-mem">
+  <div class="sec-title">Quản lý thành viên</div>
+  <div class="sec-sub">Dữ liệu lưu trên Google Sheets — đồng bộ mọi thiết bị</div>
+  <div id="mem-lock" class="admin-gate" style="display:none">
+    <div style="font-size:13px;color:var(--mu2);margin-bottom:10px">🔒 Cần mật khẩu admin để thêm/xóa thành viên.</div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px">
+      <input type="password" id="pw-mem" placeholder="Mật khẩu admin" onkeydown="if(event.key==='Enter')verifyPwMem()">
+      <button class="btn btn-primary" onclick="verifyPwMem()">Xác nhận</button>
+    </div>
+  </div>
+  <div id="mem-body">
+    <div class="sec-label">Thêm thành viên</div>
+    <div class="af">
+      <div><label>Tên thành viên</label><input type="text" id="new_name" placeholder="Nguyễn Văn A" onkeydown="if(event.key==='Enter')addMember()"></div>
+      <button class="btn btn-primary" onclick="addMember()" style="height:40px">+ Thêm</button>
+    </div>
+    <div class="sec-label">Danh sách (<span id="mc">0</span> thành viên)</div>
+    <div class="mg" id="mg"></div>
+  </div>
+</div>
+
+<!-- ══ HEROES ══ -->
+<div class="page" id="page-heroes">
+  <div class="sec-title">Quản lý Hero</div>
+  <div class="sec-sub">Hero lưu cục bộ trong trình duyệt admin</div>
+  <div class="card" style="margin-bottom:18px;border-left:3px solid var(--purple)">
+    <div style="font-size:13px;color:var(--mu2);line-height:1.8">
+      <strong style="color:var(--purple);font-weight:400">Bias hoạt động thế nào:</strong>
+      Bias cộng vào Elo khi tính E. Ví dụ: 1500 Elo + Medusa (S, +60) → Elo hiệu chỉnh 1560.<br>
+      <span style="color:var(--mu)">S=+60 · A=+30 · B=±0 · C=−30 · D=−60</span>
+    </div>
+  </div>
+  <div class="sec-label">Thêm hero mới</div>
+  <div class="hero-add-form">
+    <div><label>Tên hero</label><input type="text" id="new_hero_name" placeholder="Tên hero" onkeydown="if(event.key==='Enter')addHero()"></div>
+    <div><label>Tier</label><select id="new_hero_tier" onchange="autoFillBias()"><option value="S">S (+60)</option><option value="A">A (+30)</option><option value="B" selected>B (±0)</option><option value="C">C (-30)</option><option value="D">D (-60)</option></select></div>
+    <div><label>Bias (override)</label><input type="number" id="new_hero_bias" placeholder="auto" value=""></div>
+    <button class="btn btn-primary" onclick="addHero()" style="height:40px">+ Thêm</button>
+  </div>
+  <div class="sec-label">Danh sách (<span id="hero-count">0</span> hero)</div>
+  <div class="hero-grid" id="hero-grid"></div>
+  <div class="sec-label">Thống kê win rate</div>
+  <table class="hs-table"><thead><tr>
+    <th>Hero</th><th>Tier</th><th>Bias</th>
+    <th style="text-align:center">Trận</th><th style="text-align:center">Thắng</th>
+    <th style="text-align:center">Win%</th><th style="text-align:center">Gợi ý</th>
+  </tr></thead><tbody id="hs-tbody"></tbody></table>
+</div>
+
+<!-- ══ SETTINGS ══ -->
+<div class="page" id="page-cfg">
+  <div class="sec-title">Cài đặt</div>
+  <div class="sec-sub">Cấu hình hệ thống và kết nối Google Sheets</div>
+
+  <div class="sec-label">🔗 Kết nối Google Sheets</div>
+  <div class="card" style="margin-bottom:20px">
+    <div style="font-size:13px;color:var(--mu2);margin-bottom:14px;line-height:1.7">
+      Paste <strong style="color:var(--tx);font-weight:400">Web App URL</strong> từ Google Apps Script vào đây.
+      URL có dạng: <code style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple)">https://script.google.com/macros/s/ABC.../exec</code>
+    </div>
+    <div class="fg"><label>Apps Script URL</label><input type="text" id="api-url" placeholder="https://script.google.com/macros/s/.../exec"></div>
+    <div class="fg"><label>Mật khẩu admin (khớp với PASSWORD trong Code.gs)</label><input type="password" id="api-pw" placeholder="gameology2025"></div>
+    <div class="row">
+      <button class="btn btn-primary" onclick="saveApiConfig()">💾 Lưu cấu hình</button>
+      <button class="btn" onclick="testConnection()">🧪 Kiểm tra kết nối</button>
+    </div>
+    <div id="conn-status" style="margin-top:10px;font-size:12px;color:var(--mu)"></div>
+  </div>
+
+  <div class="sec-label">K-factor</div>
+  <div class="sg">
+    <div><label>K người mới (dưới <span id="thr-d">30</span> ván)</label><input type="number" id="s_kn" value="40"></div>
+    <div><label>K thường xuyên</label><input type="number" id="s_kr" value="20"></div>
+  </div>
+  <div class="sec-label">Khác</div>
+  <div class="sg" style="margin-bottom:14px">
+    <div><label>Elo mặc định (thành viên mới)</label><input type="number" id="s_st" value="1500"></div>
+    <div><label>Ngưỡng "người mới" (ván)</label><input type="number" id="s_th" value="30" onchange="document.getElementById('thr-d').textContent=this.value"></div>
+  </div>
+  <button class="btn btn-primary" onclick="saveSettingsRemote()" style="margin-bottom:28px">💾 Lưu cài đặt lên Sheets</button>
+
+  <div class="sec-label">Dữ liệu cục bộ (hero list)</div>
+  <div class="card" style="margin-bottom:12px">
+    <div style="font-size:13px;color:var(--mu2);margin-bottom:12px">Xuất/nhập danh sách hero (lưu trong trình duyệt).</div>
+    <div class="row">
+      <button class="btn" onclick="exportHeroes()">📥 Xuất hero JSON</button>
+      <label class="btn" style="cursor:pointer">📤 Nhập hero JSON<input type="file" accept=".json" style="display:none" onchange="importHeroes(event)"></label>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── TIER & HERO DATA ──────────────────────────────────
+const TIER_BIAS  = {S:60,A:30,B:0,C:-30,D:-60};
+const TIER_COLOR = {S:'#f8b84a',A:'#50c878',B:'#6b9ef8',C:'#c89af0',D:'#9a9590'};
+const TIER_ORDER = ['S','A','B','C','D'];
+
+const DEFAULT_HEROES = [
+  // ── S Tier (+60) ──
+  {id:'h_medusa',       name:'Medusa',             tier:'S', bias:60},
+  {id:'h_sherlock',     name:'Sherlock Holmes',    tier:'S', bias:60},
+  {id:'h_houdini',      name:'Harry Houdini',      tier:'S', bias:60},
+  {id:'h_drstrange',    name:'Doctor strange',     tier:'S', bias:60},
+  {id:'h_elektra',      name:'Elektra',            tier:'S', bias:60},
+  // ── A Tier (+30) ──
+  {id:'h_sinbad',       name:'Sinbad',             tier:'A', bias:30},
+  {id:'h_bigfoot',      name:'Big foot',           tier:'A', bias:30},
+  {id:'h_achilles',     name:'Achiles',            tier:'A', bias:30},
+  {id:'h_sungoku',      name:'Sun wukong',         tier:'A', bias:30},
+  {id:'h_yennega',      name:'Yennega',            tier:'A', bias:30},
+  {id:'h_tesla',        name:'Nikola Tesla',       tier:'A', bias:30},
+  {id:'h_goldenbat',    name:'Golden Bat',         tier:'A', bias:30},
+  {id:'h_tomoe',        name:'Tomoe Gozen',        tier:'A', bias:30},
+  {id:'h_shehulk',      name:'She Hulk',           tier:'A', bias:30},
+  {id:'h_ciri',         name:'Ciri',               tier:'A', bias:30},
+  {id:'h_eredin',       name:'Eredin',             tier:'A', bias:30},
+  {id:'h_yentriss',     name:'Yennefer and Triss', tier:'A', bias:30},
+  {id:'h_blackbeard',   name:'Black Beard',        tier:'A', bias:30},
+  {id:'h_chupacabra',   name:'Chupacabra',         tier:'A', bias:30},
+  {id:'h_raphael',      name:'Raphael',            tier:'A', bias:30},
+  // ── B Tier (0) ──
+  {id:'h_dracula',      name:'Dracula',            tier:'C', bias:-30},
+  {id:'h_brucelee',     name:'Bruce Lee',          tier:'B', bias:0},
+  {id:'h_robinhood',    name:'Robin hood',         tier:'B', bias:0},
+  {id:'h_littlered',    name:'Little red',         tier:'B', bias:0},
+  {id:'h_daredevil',    name:'Daredevil',          tier:'B', bias:0},
+  {id:'h_bullseye',     name:'Bullseye',           tier:'B', bias:0},
+  {id:'h_blackwidow',   name:'Black Widow',        tier:'B', bias:0},
+  {id:'h_blackpanther', name:'Black Panther',      tier:'B', bias:0},
+  {id:'h_wintersoldier',name:'Winter Soldier',     tier:'B', bias:0},
+  {id:'h_genie',        name:'The Genie',          tier:'B', bias:0},
+  {id:'h_jilltrent',    name:'Dr. Jill Trent',     tier:'B', bias:0},
+  {id:'h_annie',        name:'Annie Christmas',    tier:'B', bias:0},
+  {id:'h_cloakdagger',  name:'Cloack Dagger',      tier:'B', bias:0},
+  {id:'h_ghostrider',   name:'Ghost Rider',        tier:'B', bias:0},
+  {id:'h_lukecage',     name:'Luke Cage',          tier:'B', bias:0},
+  {id:'h_moonknight',   name:'Moon Knight',        tier:'B', bias:0},
+  {id:'h_wayward',      name:'The Wayward Sister', tier:'B', bias:0},
+  {id:'h_titania',      name:'Titania',            tier:'B', bias:0},
+  {id:'h_geralt',       name:'Geralt',             tier:'B', bias:0},
+  {id:'h_philippa',     name:'Philippa',           tier:'C', bias:-30},
+  {id:'h_pandora',      name:'Pandora',            tier:'B', bias:0},
+  {id:'h_leonardo',     name:'Leonardo',           tier:'B', bias:0},
+  {id:'h_donatello',    name:'Donatello',          tier:'B', bias:0},
+  {id:'h_shredder',     name:'Shredder',           tier:'B', bias:0},
+  {id:'h_krang',        name:'Krang',              tier:'B', bias:0},
+  {id:'h_ali',          name:'Muhammad Ali',       tier:'B', bias:0},
+  {id:'h_loki',         name:'Loki',               tier:'B', bias:0},
+  // ── C Tier (-30) ──
+  {id:'h_alice',        name:'Alice',              tier:'C', bias:-30},
+  {id:'h_invisible',    name:'Invisible man',      tier:'D', bias:-60},
+  {id:'h_jekkyl',       name:'Jekyll & Hyde',      tier:'C', bias:-30},
+  {id:'h_bloodymary',   name:'Bloody Mary',        tier:'C', bias:-30},
+  {id:'h_beowulf',      name:'Beowulf',            tier:'C', bias:-30},
+  {id:'h_spider',       name:'Spider Man',         tier:'D', bias:-60},
+  {id:'h_msmarvel',     name:'Ms. Marvel',         tier:'C', bias:-30},
+  {id:'h_michelangelo', name:'Michelangelo',       tier:'C', bias:-30},
+  {id:'h_leshen',       name:'Ancient Leshen',     tier:'C', bias:-30},
+  {id:'h_hamlet',       name:'Hamlet',             tier:'C', bias:-30},
+  {id:'h_shakespeare',  name:'Shakesspeare',       tier:'C', bias:-30},
+  // ── D Tier (-60) ──
+  {id:'h_kingarthur',   name:'King arthur',        tier:'D', bias:-60},
+  {id:'h_buffy',        name:'Buffy',              tier:'D', bias:-60},
+  {id:'h_spike',        name:'Spike',              tier:'D', bias:-60},
+  {id:'h_willow',       name:'Willow',             tier:'D', bias:-60},
+  {id:'h_angel',        name:'Angel',              tier:'D', bias:-60},
+  {id:'h_nobunaga',     name:'Oda Nobunaga',       tier:'D', bias:-60},
+  {id:'h_squirrelgirl', name:'Squirrel Girl',      tier:'D', bias:-60},
+];
+
+// ── STATE ─────────────────────────────────────────────
+const LKEY = 'ugh_local_v1';
+let members = [];
+let history = [];
+let heroes  = [];
+let cfg     = {kn:40, kr:20, st:1500, th:30};
+let apiUrl  = '';
+let apiPw   = '';
+let pending = null;
+let isAdmin = false;
+
+// ── LOCAL STORAGE (chỉ lưu hero + config API) ─────────
+function loadLocal() {
+  try {
+    const d = JSON.parse(localStorage.getItem(LKEY)||'{}');
+    if (d.heroes && d.heroes.length) {
+      heroes = d.heroes;
+      // merge: add any new DEFAULT_HEROES not yet in local
+      const ids   = new Set(heroes.map(h=>h.id));
+      const names = new Set(heroes.map(h=>h.name.toLowerCase()));
+      DEFAULT_HEROES.forEach(dh=>{
+        if(!ids.has(dh.id) && !names.has(dh.name.toLowerCase()))
+          heroes.push({...dh});
+      });
+    } else {
+      heroes = DEFAULT_HEROES.map(h=>({...h}));
+    }
+    if (d.apiUrl) { apiUrl = d.apiUrl; document.getElementById('api-url').value = apiUrl; }
+    if (d.apiPw)  { apiPw  = d.apiPw;  document.getElementById('api-pw').value  = apiPw;  }
+  } catch(e) { heroes = DEFAULT_HEROES.map(h=>({...h})); }
+}
+function saveLocal() {
+  localStorage.setItem(LKEY, JSON.stringify({heroes, apiUrl, apiPw}));
+}
+
+// ── TOAST ─────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type?' '+type:'');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+// ── SYNC STATUS ───────────────────────────────────────
+function setSyncStatus(state, msg) {
+  document.getElementById('sync-dot').className = 'dot ' + state;
+  const lbl = document.getElementById('sync-label');
+  lbl.textContent = msg;
+  lbl.style.color = state==='ok'?'var(--green)':state==='err'?'var(--red)':'var(--mu)';
+}
+
+// ── API ───────────────────────────────────────────────
+async function apiFetch() {
+  if (!apiUrl) { setSyncStatus('err','Chưa cấu hình URL'); return null; }
+  try {
+    setSyncStatus('loading','Đang tải...');
+    const r = await fetch(apiUrl + '?action=read&t='+Date.now());
+    if (!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    members = d.members || [];
+    history = d.history || [];
+    if (d.settings) cfg = {...cfg,...d.settings};
+    setSyncStatus('ok','Đã đồng bộ');
+    return d;
+  } catch(e) {
+    setSyncStatus('err','Lỗi kết nối');
+    showToast('Không thể kết nối: '+e.message,'err');
+    return null;
+  }
+}
+
+async function apiPost(action, data) {
+  if (!apiUrl) { showToast('Chưa cấu hình API URL!','err'); return null; }
+  try {
+    setSyncStatus('loading','Đang lưu...');
+    const r = await fetch(apiUrl, {
+      method:'POST', redirect:'follow',
+      body: JSON.stringify({password: apiPw, action, data})
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    setSyncStatus('ok','Đã lưu');
+    return d;
+  } catch(e) {
+    setSyncStatus('err','Lỗi lưu');
+    showToast('Lỗi: '+e.message,'err');
+    return null;
+  }
+}
+
+// ── ADMIN AUTH ────────────────────────────────────────
+function checkAdmin(bodyId, lockId) {
+  if (!apiUrl) { showToast('Cấu hình URL trước trong Cài đặt!','err'); return; }
+  if (isAdmin) {
+    document.getElementById(lockId).style.display='none';
+    document.getElementById(bodyId).style.display='block';
+  } else {
+    document.getElementById(lockId).style.display='block';
+    document.getElementById(bodyId).style.display='none';
+  }
+}
+async function verifyPw() {
+  const pw = document.getElementById('pw-input').value;
+  const r  = await apiPost('saveSettings', cfg); // test call
+  // If no error, password is correct
+  if (r && r.ok) {
+    apiPw = pw; saveLocal();
+    isAdmin = true;
+    document.getElementById('calc-lock').style.display='none';
+    document.getElementById('calc-body').style.display='block';
+  } else {
+    showToast('Sai mật khẩu!','err');
+  }
+}
+async function verifyPwMem() {
+  const pw = document.getElementById('pw-mem').value;
+  apiPw = pw;
+  const r  = await apiPost('saveSettings', cfg);
+  if (r && r.ok) {
+    isAdmin = true; saveLocal();
+    document.getElementById('mem-lock').style.display='none';
+    document.getElementById('mem-body').style.display='block';
+  } else {
+    apiPw = ''; showToast('Sai mật khẩu!','err');
+  }
+}
+
+// ── NAV ───────────────────────────────────────────────
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  btn.classList.add('active');
+  if (id==='lb')    { loadAll(); }
+  if (id==='calc')  { fillSelects(); fillHeroSelects(); renderHist(); checkAdmin('calc-body','calc-lock'); }
+  if (id==='mem')   { renderMem(); checkAdmin('mem-body','mem-lock'); }
+  if (id==='heroes'){ renderHeroes(); }
+  if (id==='cfg')   { loadCfgUI(); }
+}
+
+async function loadAll() {
+  const d = await apiFetch();
+  if (!d) return;
+  renderLB(); renderMem(); renderHist();
+  fillSelects();
+}
+
+// ── AVATAR ────────────────────────────────────────────
+const COLS=[['#5B3BBF','#c5b8f8'],['#B83232','#f8b8b8'],['#2A7A4A','#a8f0c8'],['#B87A2A','#f8daa8'],['#2A5AB8','#a8c8f8'],['#7A2A7A','#f0a8f0'],['#2A7A7A','#a8f0f0'],['#7A5A2A','#f0d8a8']];
+function acol(s){let h=0;for(let c of s)h=(h*31+c.charCodeAt(0))&0xfffffff;return COLS[h%COLS.length]}
+function avEl(name){const[bg,fg]=acol(name);const i=name.trim().split(/\s+/).map(w=>w[0]?.toUpperCase()||'').join('').slice(0,2)||'?';return`<div class="av" style="background:${bg}20;color:${fg}">${i}</div>`}
+
+// ── LEADERBOARD ───────────────────────────────────────
+function renderLB() {
+  const list = document.getElementById('lb-list');
+  const sub  = document.getElementById('lb-sub');
+  if (!members.length) {
+    list.innerHTML='<div class="empty">Chưa có thành viên nào.</div>';
+    sub.textContent=''; return;
+  }
+  const sorted = [...members].sort((a,b)=>b.elo-a.elo);
+  sub.textContent=`${sorted.length} thành viên · ${history.length} trận đã chơi`;
+  list.innerHTML=sorted.map((m,i)=>{
+    const r=i+1, rc=r<=3?'r'+r:'';
+    const medal=r===1?'🥇':r===2?'🥈':r===3?'🥉':r;
+    const wr=m.games?Math.round(m.wins/m.games*100):0;
+    return`<div class="lb-row ${rc}">
+      <div class="lb-rank">${medal}</div>
+      <div style="display:flex;align-items:center;gap:10px">${avEl(m.name)}
+        <div><div style="font-size:14px">${m.name}</div>
+          <div style="font-size:11px;color:var(--mu)">${m.games<cfg.th?'Người mới':''}</div>
+        </div>
+      </div>
+      <div class="lb-elo">${m.elo}</div>
+      <div class="lb-stat h-wl" style="color:var(--green)">${m.wins}W/${m.losses}L</div>
+      <div class="lb-stat">${m.games}</div>
+      <div class="lb-stat h-wr">${wr}%</div>
+    </div>`
+  }).join('');
+}
+
+// ── MEMBERS ───────────────────────────────────────────
+async function addMember() {
+  const inp  = document.getElementById('new_name');
+  const name = inp.value.trim();
+  if (!name) return;
+  if (members.find(m=>m.name.toLowerCase()===name.toLowerCase())) { showToast('Tên đã tồn tại!','err'); return; }
+  const r = await apiPost('addMember', {name});
+  if (!r) return;
+  members.push({id:r.id, name, elo:r.elo, wins:0, losses:0, draws:0, games:0});
+  inp.value='';
+  renderMem(); fillSelects(); renderLB();
+  showToast('Đã thêm '+name,'ok');
+}
+async function delMember(id, name) {
+  if (!confirm(`Xóa thành viên "${name}"?`)) return;
+  const r = await apiPost('delMember', {id});
+  if (!r) return;
+  members = members.filter(m=>m.id!==id);
+  renderMem(); fillSelects(); renderLB();
+  showToast('Đã xóa '+name);
+}
+function renderMem() {
+  const g = document.getElementById('mg');
+  document.getElementById('mc').textContent = members.length;
+  if (!members.length) { g.innerHTML='<div class="empty" style="grid-column:1/-1">Chưa có ai. Thêm ngay!</div>'; return; }
+  g.innerHTML=[...members].sort((a,b)=>b.elo-a.elo).map(m=>{
+    const isNew=m.games<cfg.th, wr=m.games?Math.round(m.wins/m.games*100):0;
+    return`<div class="mc">${avEl(m.name)}<div class="mi">
+      <div class="mn">${m.name}${isNew?` <span class="chip-new">Mới</span>`:''}</div>
+      <div class="me">${m.elo} Elo &middot; <span style="color:var(--green)">${m.wins}W</span> ${m.losses}L</div>
+      <div class="mg2">${m.games} trận &middot; Win ${wr}%</div>
+    </div><button class="btn btn-danger btn-sm" onclick="delMember('${m.id}','${m.name}')">Xóa</button></div>`
+  }).join('');
+}
+
+// ── HEROES ────────────────────────────────────────────
+function bsCls(b){return b>0?'p':b<0?'n':'z'}
+function bsStr(b){return b>0?'+'+b:b===0?'±0':''+b}
+function autoFillBias(){
+  const t=document.getElementById('new_hero_tier').value;
+  document.getElementById('new_hero_bias').value='';
+  document.getElementById('new_hero_bias').placeholder=bsStr(TIER_BIAS[t]||0)+'(auto)';
+}
+function addHero(){
+  const nameEl=document.getElementById('new_hero_name');
+  const tier=document.getElementById('new_hero_tier').value||'B';
+  const biasEl=document.getElementById('new_hero_bias');
+  const name=nameEl.value.trim();
+  const bias=biasEl.value!==''?parseInt(biasEl.value):(TIER_BIAS[tier]||0);
+  if(!name)return;
+  if(heroes.find(h=>h.name.toLowerCase()===name.toLowerCase())){showToast('Hero đã tồn tại!','err');return}
+  heroes.push({id:'h'+Date.now(),name,tier,bias});
+  saveLocal(); nameEl.value=''; biasEl.value='';
+  renderHeroes(); fillHeroSelects();
+}
+function updateHeroBias(id,val){const h=heroes.find(x=>x.id===id);if(h){h.bias=parseInt(val)||0;saveLocal();}}
+function delHero(id){if(!confirm('Xóa hero này?'))return;heroes=heroes.filter(h=>h.id!==id);saveLocal();renderHeroes();fillHeroSelects();}
+function renderHeroes(){
+  const grid=document.getElementById('hero-grid');
+  document.getElementById('hero-count').textContent=heroes.length;
+  if(!heroes.length){grid.innerHTML='<div class="empty" style="grid-column:1/-1">Chưa có hero.</div>';return}
+  const stats={};heroes.forEach(h=>{stats[h.id]={games:0,wins:0}});
+  history.forEach(r=>{
+    if(r.heroAName){const h=heroes.find(x=>x.name===r.heroAName);if(h&&stats[h.id]){stats[h.id].games++;if(r.score===1)stats[h.id].wins++;}}
+    if(r.heroBName){const h=heroes.find(x=>x.name===r.heroBName);if(h&&stats[h.id]){stats[h.id].games++;if(r.score===0)stats[h.id].wins++;}}
+  });
+  let html='';
+  TIER_ORDER.forEach(tier=>{
+    const group=heroes.filter(h=>(h.tier||'B')===tier).sort((a,b)=>a.name.localeCompare(b.name,'vi'));
+    if(!group.length)return;
+    const tc=TIER_COLOR[tier]||'var(--mu)';
+    html+=`<div class="tier-divider" style="grid-column:1/-1"><div style="font-family:'Bebas Neue',sans-serif;font-size:20px;color:${tc};width:26px;text-align:center">${tier}</div><div style="flex:1;height:1px;background:${tc}33"></div><div style="font-size:11px;color:var(--mu)">${group.length} hero · ${bsStr(group[0].bias)}</div></div>`;
+    html+=group.map(h=>{
+      const st=stats[h.id]||{games:0,wins:0};
+      const wr=st.games?Math.round(st.wins/st.games*100):null;
+      return`<div class="hc" style="border-left:3px solid ${tc}33"><div style="flex:1;min-width:0"><div class="hn">${h.name}</div><div class="hbv ${bsCls(h.bias)}">Bias: ${bsStr(h.bias)}</div><div class="hwr">${st.games?`${st.games} trận · Win ${wr}%`:'Chưa có dữ liệu'}</div></div><div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0"><input type="number" value="${h.bias}" style="width:62px;font-size:12px;padding:4px 7px;text-align:center;background:var(--sf2);border:1px solid var(--bd);color:var(--tx)" onchange="updateHeroBias('${h.id}',this.value)" title="Sửa bias"><button class="btn btn-danger btn-sm" onclick="delHero('${h.id}')">Xóa</button></div></div>`
+    }).join('');
+  });
+  grid.innerHTML=html;
+  // Stats table
+  const tbody=document.getElementById('hs-tbody');
+  let thtml='';
+  TIER_ORDER.forEach(tier=>{
+    const group=heroes.filter(h=>(h.tier||'B')===tier).sort((a,b)=>a.name.localeCompare(b.name,'vi'));
+    if(!group.length)return;
+    const tc=TIER_COLOR[tier]||'var(--mu)';
+    thtml+=`<tr><td colspan="7" style="background:${tc}11;color:${tc};font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px">TIER ${tier}</td></tr>`;
+    thtml+=group.map(h=>{
+      const st=stats[h.id]||{games:0,wins:0};
+      const wr=st.games?Math.round(st.wins/st.games*100):null;
+      let sug='—';
+      if(st.games>=10){if(wr>60)sug=`<span style="color:var(--red)">↑ Tăng bias</span>`;else if(wr<40)sug=`<span style="color:var(--blue-lt)">↓ Giảm bias</span>`;else sug=`<span style="color:var(--green)">✓ Cân bằng</span>`;}
+      else if(st.games>0)sug='<span style="color:var(--mu)">Cần thêm data</span>';
+      return`<tr><td>${h.name}</td><td style="color:${tc};font-family:'DM Mono',monospace;font-size:11px">${tier}</td><td class="mono ${bsCls(h.bias)}">${bsStr(h.bias)}</td><td class="mono" style="text-align:center">${st.games}</td><td class="mono" style="text-align:center;color:var(--green)">${st.wins}</td><td class="mono" style="text-align:center">${wr!==null?wr+'%':'—'}</td><td style="text-align:center;font-size:11px">${sug}</td></tr>`
+    }).join('');
+  });
+  tbody.innerHTML=thtml;
+}
+
+// ── CALCULATOR ────────────────────────────────────────
+function fillSelects(){
+  ['a','b'].forEach(s=>{
+    const el=document.getElementById('sel_'+s), cur=el.value;
+    el.innerHTML='<option value="">— Chọn thành viên —</option>';
+    [...members].sort((a,b)=>a.name.localeCompare(b.name,'vi')).forEach(m=>{
+      el.innerHTML+=`<option value="${m.id}">${m.name} (${m.elo})</option>`;
+    });
+    if(cur)el.value=cur;
+  });
+}
+function fillHeroSelects(){
+  ['a','b'].forEach(s=>{
+    const el=document.getElementById('hero_'+s), cur=el.value;
+    el.innerHTML='<option value="">— Không chọn hero —</option>';
+    TIER_ORDER.forEach(tier=>{
+      const group=heroes.filter(h=>(h.tier||'B')===tier).sort((a,b)=>a.name.localeCompare(b.name,'vi'));
+      if(!group.length)return;
+      el.innerHTML+=`<optgroup label="Tier ${tier} (${bsStr(TIER_BIAS[tier]||0)})">`;
+      group.forEach(h=>{el.innerHTML+=`<option value="${h.id}">${h.name}</option>`;});
+      el.innerHTML+=`</optgroup>`;
+    });
+    if(cur)el.value=cur;
+  });
+}
+function getK(g){return g<cfg.th?cfg.kn:cfg.kr}
+function onSel(s){
+  const id=document.getElementById('sel_'+s).value;
+  const m=members.find(x=>x.id===id);
+  if(m){document.getElementById('ed_'+s).textContent=m.elo;const k=getK(m.games);document.getElementById('ei_'+s).textContent=`${m.games} trận · K=${k}${m.games<cfg.th?' (người mới)':''}`;}
+  else{document.getElementById('ed_'+s).textContent='—';document.getElementById('ei_'+s).textContent='Chưa chọn';}
+  onHeroChange(s);
+  document.getElementById('rp').style.display='none'; pending=null;
+}
+function onHeroChange(s){
+  const hid=document.getElementById('hero_'+s).value;
+  const mid=document.getElementById('sel_'+s).value;
+  const m=members.find(x=>x.id===mid), h=heroes.find(x=>x.id===hid);
+  const badgeEl=document.getElementById('hbadge_'+s);
+  const effRow=document.getElementById('eeff_'+s);
+  if(h){
+    const cls=h.bias>0?'hbp':h.bias<0?'hbn':'hbz';
+    badgeEl.innerHTML=`Hero bias: <span class="${cls}">${bsStr(h.bias)}</span>`;
+    if(m){document.getElementById('eff_'+s).textContent=m.elo+h.bias;effRow.style.display='flex';}
+    else effRow.style.display='none';
+  } else {badgeEl.innerHTML='';effRow.style.display='none';}
+  const hA=heroes.find(x=>x.id===document.getElementById('hero_a').value);
+  const hB=heroes.find(x=>x.id===document.getElementById('hero_b').value);
+  document.getElementById('bias-note').style.display=((hA&&hA.bias!==0)||(hB&&hB.bias!==0))?'block':'none';
+  document.getElementById('rp').style.display='none'; pending=null;
+}
+function calcMatch(score){
+  const idA=document.getElementById('sel_a').value, idB=document.getElementById('sel_b').value;
+  if(!idA||!idB){showToast('Chọn cả hai người chơi!','err');return}
+  if(idA===idB){showToast('Không thể chọn cùng một người!','err');return}
+  const mA=members.find(m=>m.id===idA), mB=members.find(m=>m.id===idB);
+  const hA=heroes.find(h=>h.id===document.getElementById('hero_a').value)||null;
+  const hB=heroes.find(h=>h.id===document.getElementById('hero_b').value)||null;
+  const effA=mA.elo+(hA?hA.bias:0), effB=mB.elo+(hB?hB.bias:0);
+  const Ka=getK(mA.games), Kb=getK(mB.games);
+  const Ea=1/(1+Math.pow(10,(effB-effA)/400)), Eb=1-Ea;
+  const dA=Math.round(Ka*(score-Ea)), dB=Math.round(Kb*((1-score)-Eb));
+  const nA=Math.max(100,mA.elo+dA), nB=Math.max(100,mB.elo+dB);
+  pending={mA,mB,hA,hB,Ka,Kb,effA,effB,Ea,Eb,score,dA,dB,nA,nB};
+  const pA=(Ea*100).toFixed(1), pB=(Eb*100).toFixed(1);
+  document.getElementById('pla').textContent=`${mA.name} ${pA}%`;
+  document.getElementById('plb').textContent=`${pB}% ${mB.name}`;
+  document.getElementById('bar_a').style.width=pA+'%';
+  const oc=score===1?mA.name+' thắng':score===0?mB.name+' thắng':'Hòa';
+  document.getElementById('oc-label').textContent=oc;
+  document.getElementById('rna').textContent=mA.name;
+  document.getElementById('rha').textContent=hA?`🦸 ${hA.name} (${bsStr(hA.bias)})`:'';
+  document.getElementById('rba').textContent=mA.elo;
+  document.getElementById('raa').textContent=nA;
+  setDl('rda',dA);
+  document.getElementById('rka').textContent=`K=${Ka}${mA.games<cfg.th?' · người mới':''}${hA&&hA.bias?` · Elo HC: ${effA}`:''}`;
+  document.getElementById('rnb').textContent=mB.name;
+  document.getElementById('rhb').textContent=hB?`🦸 ${hB.name} (${bsStr(hB.bias)})`:'';
+  document.getElementById('rbb').textContent=mB.elo;
+  document.getElementById('rab').textContent=nB;
+  setDl('rdb',dB);
+  document.getElementById('rkb').textContent=`K=${Kb}${mB.games<cfg.th?' · người mới':''}${hB&&hB.bias?` · Elo HC: ${effB}`:''}`;
+  const hasBias=(hA&&hA.bias!==0)||(hB&&hB.bias!==0);
+  let fm=`Kết quả: ${oc}\n`;
+  if(hasBias){fm+=`Elo HC: ${mA.name}=${effA}, ${mB.name}=${effB}\n`;}
+  fm+=`E_${mA.name} = 1/(1+10^((${effB}-${effA})/400)) = ${Ea.toFixed(4)}\nΔElo_${mA.name} = ${Ka}×(${score}-${Ea.toFixed(4)}) = ${dA}\nΔElo_${mB.name} = ${Kb}×(${1-score}-${Eb.toFixed(4)}) = ${dB}`;
+  document.getElementById('fm').textContent=fm;
+  const rp=document.getElementById('rp');
+  rp.style.display='block'; document.getElementById('btn-save').textContent='💾 Lưu kết quả';
+  rp.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function setDl(id,d){const el=document.getElementById(id);el.textContent=(d>=0?'+':'')+d;el.className='dl '+(d>0?'p':d<0?'n':'z');}
+
+async function doSave(){
+  if(!pending)return;
+  const{mA,mB,hA,hB,score,dA,dB,nA,nB}=pending;
+  const uA={...mA}, uB={...mB};
+  uA.elo=nA; uA.games++;
+  uB.elo=nB; uB.games++;
+  if(score===1){uA.wins++;uB.losses++;}
+  else if(score===0){uB.wins++;uA.losses++;}
+  else{uA.draws++;uB.draws++;}
+  const r=await apiPost('saveMatch',{
+    idA:mA.id, idB:mB.id,
+    nameA:mA.name, nameB:mB.name,
+    heroAName:hA?hA.name:'', heroBName:hB?hB.name:'',
+    eloA:mA.elo, eloB:mB.elo, nA, nB, dA, dB, score,
+    winsA:uA.wins, lossesA:uA.losses, drawsA:uA.draws, gamesA:uA.games,
+    winsB:uB.wins, lossesB:uB.losses, drawsB:uB.draws, gamesB:uB.games,
+  });
+  if(!r)return;
+  // update local cache
+  const ma=members.find(m=>m.id===mA.id); if(ma)Object.assign(ma,{elo:nA,wins:uA.wins,losses:uA.losses,draws:uA.draws,games:uA.games});
+  const mb=members.find(m=>m.id===mB.id); if(mb)Object.assign(mb,{elo:nB,wins:uB.wins,losses:uB.losses,draws:uB.draws,games:uB.games});
+  history.unshift({nameA:mA.name,nameB:mB.name,heroAName:hA?hA.name:'',heroBName:hB?hB.name:'',eloA:mA.elo,eloB:mB.elo,nA,nB,dA,dB,score,ts:Date.now()});
+  pending=null;
+  fillSelects(); renderLB(); renderHist();
+  document.getElementById('btn-save').textContent='✅ Đã lưu!';
+  setTimeout(()=>document.getElementById('btn-save').textContent='💾 Lưu kết quả',2500);
+  showToast('Đã lưu lên Google Sheets!','ok');
+}
+function resetCalc(){document.getElementById('rp').style.display='none';pending=null;}
+
+// ── HISTORY ───────────────────────────────────────────
+function renderHist(){
+  const list=document.getElementById('hist-list');
+  if(!history.length){list.innerHTML='<div class="empty">Chưa có trận nào</div>';return}
+  list.innerHTML=history.slice(0,60).map(h=>{
+    const oc=h.score===1?'wa':h.score===0?'wb':'dr';
+    const oct=h.score===1?'A Thắng':h.score===0?'B Thắng':'Hòa';
+    const da=(h.dA>=0?'+':'')+h.dA, db=(h.dB>=0?'+':'')+h.dB;
+    const dt=new Date(h.ts);
+    const ts=`${dt.getDate()}/${dt.getMonth()+1} ${dt.getHours()}:${String(dt.getMinutes()).padStart(2,'0')}`;
+    return`<div class="hist-wrap">
+      <div class="hist-row">
+        <span><b style="font-size:12px">${h.nameA}</b> <span style="color:var(--mu);font-size:11px">${h.eloA}→${h.nA}</span></span>
+        <span class="hd" style="color:${h.dA>=0?'var(--green)':'var(--red)'}">${da}</span>
+        <span><b style="font-size:12px">${h.nameB}</b> <span style="color:var(--mu);font-size:11px">${h.eloB}→${h.nB}</span></span>
+        <span class="ho ${oc}">${oct}</span>
+        <span class="ht">${ts}</span>
+      </div>
+      <div class="hist-hero">${h.heroAName||'—'} vs ${h.heroBName||'—'}</div>
+    </div>`
+  }).join('');
+}
+async function doClearHistory(){
+  if(!confirm('Xóa toàn bộ lịch sử trận?'))return;
+  const r=await apiPost('clearHistory',{});
+  if(!r)return;
+  history=[];renderHist();showToast('Đã xóa lịch sử','ok');
+}
+
+// ── SETTINGS ─────────────────────────────────────────
+function loadCfgUI(){
+  document.getElementById('s_kn').value=cfg.kn;
+  document.getElementById('s_kr').value=cfg.kr;
+  document.getElementById('s_st').value=cfg.st;
+  document.getElementById('s_th').value=cfg.th;
+  document.getElementById('thr-d').textContent=cfg.th;
+  document.getElementById('api-url').value=apiUrl;
+  document.getElementById('api-pw').value=apiPw;
+}
+function saveApiConfig(){
+  apiUrl=document.getElementById('api-url').value.trim();
+  apiPw =document.getElementById('api-pw').value;
+  saveLocal();
+  showToast('Đã lưu cấu hình!','ok');
+  setSyncStatus('','Chưa test');
+}
+async function testConnection(){
+  apiUrl=document.getElementById('api-url').value.trim();
+  apiPw =document.getElementById('api-pw').value;
+  saveLocal();
+  const el=document.getElementById('conn-status');
+  el.textContent='Đang kiểm tra...';
+  const d=await apiFetch();
+  if(d){
+    el.textContent=`✅ Kết nối thành công! ${d.members?.length||0} thành viên, ${d.history?.length||0} trận.`;
+    el.style.color='var(--green)';
+  } else {
+    el.textContent='❌ Không thể kết nối. Kiểm tra lại URL và deploy Apps Script.';
+    el.style.color='var(--red)';
+  }
+}
+async function saveSettingsRemote(){
+  cfg.kn=parseInt(document.getElementById('s_kn').value)||40;
+  cfg.kr=parseInt(document.getElementById('s_kr').value)||20;
+  cfg.st=parseInt(document.getElementById('s_st').value)||1500;
+  cfg.th=parseInt(document.getElementById('s_th').value)||30;
+  document.getElementById('thr-d').textContent=cfg.th;
+  const r=await apiPost('saveSettings',cfg);
+  if(r)showToast('Đã lưu cài đặt!','ok');
+}
+function exportHeroes(){
+  const b=new Blob([JSON.stringify(heroes,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(b);
+  a.download=`heroes-${new Date().toISOString().slice(0,10)}.json`;a.click();
+}
+function importHeroes(e){
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{const d=JSON.parse(ev.target.result);if(!Array.isArray(d))return alert('File không hợp lệ!');
+      if(!confirm(`Nhập ${d.length} hero? Danh sách hiện tại bị ghi đè.`))return;
+      heroes=d;saveLocal();renderHeroes();fillHeroSelects();showToast('Nhập thành công!','ok');
+    }catch{alert('Lỗi đọc file!');}
+  };r.readAsText(f);
+}
+
+// ── INIT ─────────────────────────────────────────────
+loadLocal();
+loadAll();
+fillHeroSelects();
+renderHeroes();
+loadCfgUI();
+</script>
+</body>
+</html>
