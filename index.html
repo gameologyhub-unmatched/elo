@@ -363,36 +363,48 @@ select option{background:var(--sf2)}
 <!-- ══ SETTINGS ══ -->
 <div class="page" id="page-cfg">
   <div class="sec-title">Cài đặt</div>
-  <div class="sec-sub">Cấu hình hệ thống và kết nối Google Sheets</div>
+  <div class="sec-sub" id="cfg-sub">Nhập mật khẩu admin để chỉnh cài đặt</div>
 
-  <div class="sec-label">🔗 Kết nối Google Sheets</div>
-  <div class="card" style="margin-bottom:20px">
-    <div style="font-size:13px;color:var(--mu2);margin-bottom:14px;line-height:1.7">
-      Paste <strong style="color:var(--tx);font-weight:400">Web App URL</strong> từ Google Apps Script vào đây.
-      URL có dạng: <code style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple)">https://script.google.com/macros/s/ABC.../exec</code>
+  <!-- Gate: nhập mật khẩu trước -->
+  <div id="cfg-lock" class="admin-gate">
+    <div style="font-size:13px;color:var(--mu2);margin-bottom:10px">🔒 Nhập mật khẩu admin để truy cập cài đặt.</div>
+    <div style="display:grid;grid-template-columns:1fr auto;gap:8px">
+      <input type="password" id="pw-cfg" placeholder="Mật khẩu admin" onkeydown="if(event.key==='Enter')verifyPwCfg()">
+      <button class="btn btn-primary" onclick="verifyPwCfg()">Xác nhận</button>
     </div>
-    <div class="fg"><label>Apps Script URL</label><input type="text" id="api-url" placeholder="https://script.google.com/macros/s/.../exec"></div>
-    <div class="fg"><label>Mật khẩu admin (khớp với PASSWORD trong Code.gs)</label><input type="password" id="api-pw" placeholder="gameology2025"></div>
-    <div class="row">
-      <button class="btn btn-primary" onclick="saveApiConfig()">💾 Lưu cấu hình</button>
-      <button class="btn" onclick="testConnection()">🧪 Kiểm tra kết nối</button>
+  </div>
+
+  <!-- Nội dung chỉ admin thấy -->
+  <div id="cfg-body" style="display:none">
+
+    <div class="sec-label">🔗 Kết nối Google Sheets</div>
+    <div class="card" style="margin-bottom:20px">
+      <div style="font-size:13px;color:var(--mu2);margin-bottom:14px;line-height:1.7">
+        Paste <strong style="color:var(--tx);font-weight:400">Web App URL</strong> từ Google Apps Script vào đây.
+        URL có dạng: <code style="font-family:'DM Mono',monospace;font-size:11px;color:var(--purple)">https://script.google.com/macros/s/ABC.../exec</code>
+      </div>
+      <div class="fg"><label>Apps Script URL</label><input type="text" id="api-url" placeholder="https://script.google.com/macros/s/.../exec"></div>
+      <div class="fg"><label>Mật khẩu admin</label><input type="password" id="api-pw" placeholder="••••••••"></div>
+      <div class="row">
+        <button class="btn btn-primary" onclick="saveApiConfig()">💾 Lưu cấu hình</button>
+        <button class="btn" onclick="testConnection()">🧪 Kiểm tra kết nối</button>
+      </div>
+      <div id="conn-status" style="margin-top:10px;font-size:12px;color:var(--mu)"></div>
     </div>
-    <div id="conn-status" style="margin-top:10px;font-size:12px;color:var(--mu)"></div>
-  </div>
 
-  <div class="sec-label">K-factor</div>
-  <div class="sg">
-    <div><label>K người mới (dưới <span id="thr-d">30</span> ván)</label><input type="number" id="s_kn" value="40"></div>
-    <div><label>K thường xuyên</label><input type="number" id="s_kr" value="20"></div>
-  </div>
-  <div class="sec-label">Khác</div>
-  <div class="sg" style="margin-bottom:14px">
-    <div><label>Elo mặc định (thành viên mới)</label><input type="number" id="s_st" value="1500"></div>
-    <div><label>Ngưỡng "người mới" (ván)</label><input type="number" id="s_th" value="30" onchange="document.getElementById('thr-d').textContent=this.value"></div>
-  </div>
-  <button class="btn btn-primary" onclick="saveSettingsRemote()" style="margin-bottom:28px">💾 Lưu cài đặt lên Sheets</button>
+    <div class="sec-label">K-factor</div>
+    <div class="sg">
+      <div><label>K người mới (dưới <span id="thr-d">30</span> ván)</label><input type="number" id="s_kn" value="40"></div>
+      <div><label>K thường xuyên</label><input type="number" id="s_kr" value="20"></div>
+    </div>
+    <div class="sec-label">Khác</div>
+    <div class="sg" style="margin-bottom:14px">
+      <div><label>Elo mặc định (thành viên mới)</label><input type="number" id="s_st" value="1500"></div>
+      <div><label>Ngưỡng "người mới" (ván)</label><input type="number" id="s_th" value="30" onchange="document.getElementById('thr-d').textContent=this.value"></div>
+    </div>
+    <button class="btn btn-primary" onclick="saveSettingsRemote()" style="margin-bottom:28px">💾 Lưu cài đặt lên Sheets</button>
 
-
+  </div>
 </div>
 
 <script>
@@ -605,8 +617,26 @@ async function verifyPwMem() {
     isAdmin = true; saveLocal();
     document.getElementById('mem-lock').style.display='none';
     document.getElementById('mem-body').style.display='block';
-    // Show delete buttons on member cards
     document.querySelectorAll('.del-member-btn').forEach(b=>b.style.display='inline-block');
+    showToast('Đăng nhập thành công!','ok');
+  } else {
+    apiPw=''; showToast('Sai mật khẩu!','err');
+  }
+}
+async function verifyPwCfg() {
+  const pw = document.getElementById('pw-cfg').value;
+  apiPw = pw;
+  const r  = await apiPost('saveSettings', cfg);
+  if (r && r.ok) {
+    isAdmin = true; saveLocal();
+    document.getElementById('cfg-lock').style.display='none';
+    document.getElementById('cfg-body').style.display='block';
+    document.getElementById('cfg-sub').textContent='Cấu hình hệ thống và kết nối Google Sheets';
+    // Show admin UI everywhere
+    const histBtn=document.getElementById('hist-admin-btn');
+    if(histBtn)histBtn.style.display='flex';
+    document.querySelectorAll('.del-member-btn').forEach(b=>b.style.display='inline-block');
+    loadCfgUI();
     showToast('Đăng nhập thành công!','ok');
   } else {
     apiPw=''; showToast('Sai mật khẩu!','err');
@@ -623,7 +653,16 @@ function showPage(id, btn) {
   if (id==='calc')  { fillSelects(); fillHeroSelects(); renderHist(); checkAdmin('calc-body','calc-lock'); }
   if (id==='mem')   { renderMem(); checkAdmin('mem-body','mem-lock'); }
   if (id==='heroes'){ renderHeroes(); }
-  if (id==='cfg')   { loadCfgUI(); }
+  if (id==='cfg')   {
+    if (isAdmin) {
+      document.getElementById('cfg-lock').style.display='none';
+      document.getElementById('cfg-body').style.display='block';
+    } else {
+      document.getElementById('cfg-lock').style.display='block';
+      document.getElementById('cfg-body').style.display='none';
+    }
+    loadCfgUI();
+  }
   // Re-apply admin UI state
   if (isAdmin) {
     const histBtn = document.getElementById('hist-admin-btn');
