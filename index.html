@@ -711,10 +711,7 @@ function renderMem() {
 // ── HEROES ────────────────────────────────────────────
 function bsCls(b){return b>0?'p':b<0?'n':'z'}
 function bsStr(b){return b>0?'+'+b:b===0?'±0':''+b}
-  heroes.push({id:'h'+Date.now(),name,tier,bias});
-  saveLocal(); nameEl.value=''; biasEl.value='';
-  renderHeroes(); fillHeroSelects();
-}
+
 function renderHeroes(){
   const grid=document.getElementById('hero-grid');
   document.getElementById('hero-count').textContent=heroes.length;
@@ -950,8 +947,7 @@ async function saveSettingsRemote(){
   const r=await apiPost('saveSettings',cfg);
   if(r)showToast('Đã lưu cài đặt!','ok');
 }
-  };r.readAsText(f);
-}
+
 
 // ── INIT ─────────────────────────────────────────────
 loadLocal();
