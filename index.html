@@ -21,14 +21,19 @@ body{background:var(--bg);color:var(--tx);font-family:'DM Sans',sans-serif;font-
 
 /* NAV */
 nav{display:flex;flex-direction:column;border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:100;background:rgba(14,14,14,0.97);backdrop-filter:blur(8px)}
-.nav-top{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--bd);padding:0}
-.nav-logo{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;padding:12px 16px;white-space:nowrap;flex-shrink:0}
+.nav-top{display:flex;align-items:center;border-bottom:1px solid var(--bd);gap:0}
+.nav-logo{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;padding:12px 14px;white-space:nowrap;flex-shrink:0;border-right:1px solid var(--bd)}
 .nav-logo span{color:var(--red)}
+/* Xếp hạng tab in top row */
+.tab-top{background:none;border:none;border-bottom:2px solid transparent;color:var(--mu);font-family:'DM Sans',sans-serif;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;padding:12px 16px;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
+.tab-top:hover{color:var(--tx)}
+.tab-top.active{color:var(--tx);border-bottom-color:var(--red)}
+.sync-pill{display:flex;align-items:center;gap:6px;padding:6px 12px;flex-shrink:0;margin-left:auto;border-left:1px solid var(--bd)}
+/* Bottom tabs row */
 .nav-tabs{display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%}
 .nav-tabs::-webkit-scrollbar{display:none}
 .tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--mu);font-family:'DM Sans',sans-serif;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;padding:11px 16px;cursor:pointer;white-space:nowrap;transition:all .15s;flex:1;text-align:center}
 .tab:hover{color:var(--tx)}.tab.active{color:var(--tx);border-bottom-color:var(--red)}
-.sync-pill{display:flex;align-items:center;gap:6px;padding:6px 14px;flex-shrink:0}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--mu);transition:background .3s}
 .dot.ok{background:var(--green)}.dot.err{background:var(--red)}.dot.loading{background:var(--gold);animation:pulse 1s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
@@ -185,13 +190,13 @@ select option{background:var(--sf2)}
 <nav>
   <div class="nav-top">
     <div class="nav-logo">UNMATCHED <span>GAMEOLOGY HUB</span></div>
+    <button class="tab-top active" id="tab-lb" onclick="showPage('lb',this)">🏆 Xếp hạng</button>
     <div class="sync-pill">
       <div class="dot" id="sync-dot"></div>
       <span id="sync-label">Chưa kết nối</span>
     </div>
   </div>
   <div class="nav-tabs">
-    <button class="tab active" onclick="showPage('lb',this)">🏆 Xếp hạng</button>
     <button class="tab" onclick="showPage('calc',this)">⚔️ Tính Elo</button>
     <button class="tab" onclick="showPage('mem',this)">👤 Thành viên</button>
     <button class="tab" onclick="showPage('heroes',this)">🦸 Hero</button>
@@ -646,7 +651,7 @@ async function verifyPwCfg() {
 // ── NAV ───────────────────────────────────────────────
 function showPage(id, btn) {
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab,.tab-top').forEach(t=>t.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   btn.classList.add('active');
   if (id==='lb')    { loadAll(); }
