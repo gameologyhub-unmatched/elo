@@ -24,6 +24,7 @@ nav{display:flex;flex-direction:column;border-bottom:1px solid var(--bd);positio
 .nav-top{display:flex;align-items:center;border-bottom:1px solid var(--bd);gap:0}
 .nav-logo{font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:2px;padding:12px 14px;white-space:nowrap;flex-shrink:0;border-right:1px solid var(--bd)}
 .nav-logo span{color:var(--red)}
+.nav-season{font-family:'DM Sans',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);font-weight:400;margin-top:1px}
 /* Xếp hạng tab in top row */
 .tab-top{background:none;border:none;border-bottom:2px solid transparent;color:var(--mu);font-family:'DM Sans',sans-serif;font-size:12px;letter-spacing:1.5px;text-transform:uppercase;padding:12px 16px;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
 .tab-top:hover{color:var(--tx)}
@@ -189,7 +190,7 @@ select option{background:var(--sf2)}
 
 <nav>
   <div class="nav-top">
-    <div class="nav-logo">UNMATCHED <span>GAMEOLOGY HUB</span></div>
+    <div class="nav-logo">UNMATCHED <span>GAMEOLOGY HUB</span><div class="nav-season">Season 1</div></div>
     <button class="tab-top active" id="tab-lb" onclick="showPage('lb',this)">🏆 Xếp hạng</button>
     <div class="sync-pill">
       <div class="dot" id="sync-dot"></div>
